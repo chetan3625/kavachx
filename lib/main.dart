@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:get_x/get.dart';
-import 'package:get_x/get_navigation/src/root/get_material_app.dart';
+import 'package:kavachx/Constants/app_theme.dart';
 import 'package:kavachx/VIew/splash.dart';
-import 'package:kavachx/bindings/splashbinding.dart';
+import 'package:get/get.dart';
 
-
+import 'bindings/splashbinding.dart';
 void main() {
   runApp(const KavachXApp());
 }
@@ -17,16 +16,18 @@ class KavachXApp extends StatelessWidget {
     return GetMaterialApp(
       title: 'KavachX',
       debugShowCheckedModeBanner: false,
+      
+      // Apply the Dark Theme
+      theme: AppTheme.darkTheme,
+      themeMode: ThemeMode.dark,
+
       initialRoute: '/splash',
       getPages: [
         GetPage(
           name: '/splash',
-          page: () =>  SplashView(),
+          page: () => const SplashView(),
           binding: SplashBinding(),
         ),
-        // Add your other GetX routes here:
-        // GetPage(name: '/login', page: () => const LoginView()),
-        // GetPage(name: '/home', page: () => const HomeView()),
       ],
     );
   }

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:kavachx/Controller/splash_controller.dart';
 import 'package:get/get.dart';
-import 'splash_controller.dart';
 
 class SplashView extends GetView<SplashController> {
   const SplashView({Key? key}) : super(key: key);
@@ -13,19 +13,13 @@ class SplashView extends GetView<SplashController> {
         children: [
           // Background subtle gradient glow
           Positioned.fill(
-            child: Container(
-              decoration: BoxDecoration(
-                radialGradient: RadialGradient(
-                  center: Alignment.center,
-                  radius: 0.8,
-                  colors: [
-                    const Color(0xFFFF3B30).withOpacity(0.15), // Accent Gym Red/Orange
-                    Colors.transparent,
-                  ],
-                ),
-              ),
-            ),
-          ),
+            child: Image.asset(
+              'asset/app_backgrounds/splas_background.jpg',
+              fit: BoxFit.cover,
+              color: const Color(0xFF1C1C22).withOpacity(0.6),
+              colorBlendMode: BlendMode.darken,
+            )),
+          
           
           Center(
             child: Column(
