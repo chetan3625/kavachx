@@ -35,6 +35,12 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
   get: ^4.6.6
+  get_storage: ^2.1.1 # Add GetStorage
+  url_launcher: ^6.3.2
+  mobile_scanner: ^7.4.0
+  qr_flutter: ^4.1.0
+  workmanager: ^0.10.7
+  http: ^1.6.0
 
 dev_dependencies:
   flutter_test:
