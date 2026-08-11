@@ -65,6 +65,8 @@ export const registerOwnerController = asyncHandler(async (req, res) => {
     user,
     gym,
     gymToken,
+    joinUrl,
+    qrUrl,
     accessToken,
     refreshToken
   } = await registerOwner({
@@ -96,10 +98,8 @@ export const registerOwnerController = asyncHandler(async (req, res) => {
         name: gym.name
       },
 
-      qr: {
-        token: gymToken,
-        joinUrl: `https://kavachx.com/join/${gymToken}`
-      },
+      qrUrl,
+      joinUrl,
 
       accessToken,
       refreshToken

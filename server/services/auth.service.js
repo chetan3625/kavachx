@@ -3,6 +3,8 @@ import Gym from "../models/Gym.js";
 import crypto from "crypto";
 import ApiError from "../utils/ApiError.js";
 import { generateAccessToken, generateRefreshToken } from "../utils/generateToken.js";
+import qrcode from "qrcode";
+import { uploadBufferToCloudinary } from "../utils/cloudinary.js";
 
 export const registerUser = async ({
   name,
@@ -228,12 +230,25 @@ export const registerOwner = async ({
 
   await user.save({ validateBeforeSave: false });
 
+  const joinUrl = `https://kavachx.com/join/${token}`;
+  let qrUrl = null;
+
+  try {
+    const qrBuffer = await qrcode.toBuffer(joinUrl);
+    const uploadResult = await uploadBufferToCloudinary(qrBuffer, "kavachx_gym_qrs");
+    qrUrl = uploadResult.secure_url;
+  } catch (error) {
+    console.error("Failed to generate or upload QR code:", error);
+  }
+
   return {
     user,
     gym,
     accessToken,
     refreshToken,
-    gymToken: token
+    gymToken: token,
+    joinUrl,
+    qrUrl
   };
 };
 
