@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:get_storage/get_storage.dart';
 import 'package:kavachx/Constants/user_role.dart';
 import 'package:kavachx/Model/usr_model.dart';
 import 'package:kavachx/Services/api_service.dart';
@@ -69,23 +70,51 @@ class AuthController extends GetxController {
       isLoading.value = false;
 
       if (response.isOk && response.body != null) {
-        final data = response.body;
-        
-        if (data['accessToken'] != null) {
-          _apiService.accessToken = data['accessToken'];
+        final body = response.body;
+        // Safely extract data block whether it's wrapped in 'data' or top-level
+        final Map<String, dynamic> data = body['data'] ?? body;
+        final String? token = data['accessToken'];
+        final Map<String, dynamic>? userData = data['user'];
+
+        if (token != null && userData != null) {
+          final returnedRole = userData['role'];
+
+          // Role Verification Check
+          final String expectedRole =
+              role == UserRole.gymOwner ? 'gym_owner' : 'gym_member';
+
+          if (returnedRole != expectedRole) {
+            final String correctPersona =
+                returnedRole == 'gym_owner' ? 'Gym Owner' : 'Gym Member';
+
+            _showSnackbar(
+              'Access Denied',
+              'This account is registered as a $correctPersona. Please switch to $correctPersona login.',
+              isError: true,
+            );
+            return;
+          }
+
+          // Save accessToken, refreshToken, user, and qr details centrally
+          _apiService.saveAuthPayload(data);
+          
+          // Update current user state
+          currentUser.value = UserModel.fromJson(userData);
+
+          _showSnackbar(
+            'Success',
+            isRegister ? 'Registered successfully!' : 'Logged in successfully!',
+          );
+
+          // Route to appropriate dashboard
+          if (currentUser.value?.role == 'gym_owner') {
+            Get.offAllNamed('/owner-dashboard');
+          } else {
+            Get.offAllNamed('/member-dashboard');
+          }
+        } else {
+          _showSnackbar('Error', 'Invalid token or user data received', isError: true);
         }
-
-        if (data['user'] != null) {
-          currentUser.value = UserModel.fromJson(data['user']);
-        }
-
-        _showSnackbar(
-          'Success',
-          isRegister ? 'Registered successfully!' : 'Logged in successfully!',
-        );
-
-        // TODO: Redirect to Dashboard based on role
-        // if (role == UserRole.gymOwner) Get.offAllNamed('/owner-dashboard');
       } else {
         final errorMsg = response.body?['message'] ?? 'Authentication failed';
         _showSnackbar('Failed', errorMsg, isError: true);
@@ -107,7 +136,7 @@ class AuthController extends GetxController {
       borderWidth: 1,
     );
   }
-
+  
   @override
   void onClose() {
     emailController.dispose();
