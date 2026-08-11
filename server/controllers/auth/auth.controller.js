@@ -10,237 +10,217 @@ import {
   getCurrentUser
 } from "../../services/auth.service.js";
 
-import {
-  setRefreshTokenCookie,
-  clearRefreshTokenCookie
-} from "../../utils/Cookies.js";
+export const register = asyncHandler(async (req, res) => {
+  const {
+    name,
+    email,
+    phone,
+    password
+  } = req.body;
 
-export const register = asyncHandler(
-  async (req, res) => {
-    const {
-      name,
-      email,
-      phone,
-      password
-    } = req.body;
+  const {
+    user,
+    accessToken,
+    refreshToken
+  } = await registerUser({
+    name,
+    email,
+    phone,
+    password
+  });
 
-    // Backwards-compatible: create owner by default
-    const {
-      user,
+  res.status(201).json({
+    success: true,
+    message: "User registered successfully",
+
+    data: {
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+        gymId: user.gymId || null
+      },
+
       accessToken,
       refreshToken
-    } = await registerUser({
-      name,
-      email,
-      phone,
-      password
-    });
+    }
+  });
+});
 
-    setRefreshTokenCookie(
-      res,
-      refreshToken
-    );
 
-    res.status(201).json({
-      success: true,
+export const registerOwnerController = asyncHandler(async (req, res) => {
+  const {
+    name,
+    email,
+    phone,
+    password,
+    gymName,
+    gymPhone,
+    gymAddress
+  } = req.body;
 
-      message: "User registered successfully",
+  const {
+    user,
+    gym,
+    gymToken,
+    accessToken,
+    refreshToken
+  } = await registerOwner({
+    name,
+    email,
+    phone,
+    password,
+    gymName,
+    gymPhone,
+    gymAddress
+  });
 
-      data: {
-        user: {
-          id: user._id,
-          name: user.name,
-          email: user.email,
-          phone: user.phone,
-          role: user.role,
-          gymId: user.gymId || null
-        },
+  res.status(201).json({
+    success: true,
+    message: "Gym owner registered successfully",
 
-        accessToken
-      }
-    });
-  }
-);
+    data: {
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+        gymId: user.gymId
+      },
 
-export const registerOwnerController = asyncHandler(
-  async (req, res) => {
-    const {
-      name,
-      email,
-      phone,
-      password,
-      gymName,
-      gymPhone,
-      gymAddress
-    } = req.body;
+      gym: {
+        id: gym._id,
+        name: gym.name
+      },
 
-    const {
-      user,
-      gym,
-      gymToken,
+      qr: {
+        token: gymToken,
+        joinUrl: `https://kavachx.com/join/${gymToken}`
+      },
+
       accessToken,
       refreshToken
-    } = await registerOwner({
-      name,
-      email,
-      phone,
-      password,
-      gymName,
-      gymPhone,
-      gymAddress
-    });
+    }
+  });
+});
 
-    setRefreshTokenCookie(res, refreshToken);
 
-    res.status(201).json({
-      success: true,
-      message: "Gym owner registered successfully",
-      data: {
-        user: {
-          id: user._id,
-          name: user.name,
-          email: user.email,
-          phone: user.phone,
-          role: user.role,
-          gymId: user.gymId
-        },
-        gym: {
-          id: gym._id,
-          name: gym.name
-        },
-        qr: {
-          token: gymToken,
-          joinUrl: `https://kavachx.com/join/${gymToken}`
-        },
-        accessToken
-      }
-    });
-  }
-);
+export const registerMemberController = asyncHandler(async (req, res) => {
+  const {
+    name,
+    email,
+    phone,
+    password
+  } = req.body;
 
-export const registerMemberController = asyncHandler(
-  async (req, res) => {
-    const { name, email, phone, password } = req.body;
+  const {
+    user,
+    accessToken,
+    refreshToken
+  } = await registerMember({
+    name,
+    email,
+    phone,
+    password
+  });
 
-    const { user, accessToken, refreshToken } = await registerMember({
-      name,
-      email,
-      phone,
-      password
-    });
+  res.status(201).json({
+    success: true,
+    message: "Member registered successfully",
 
-    setRefreshTokenCookie(res, refreshToken);
+    data: {
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+        gymId: user.gymId || null
+      },
 
-    res.status(201).json({
-      success: true,
-      message: "Member registered successfully",
-      data: {
-        user: {
-          id: user._id,
-          name: user.name,
-          email: user.email,
-          phone: user.phone,
-          role: user.role,
-          gymId: user.gymId
-        },
-        accessToken
-      }
-    });
-  }
-);
-
-export const login = asyncHandler(
-  async (req, res) => {
-    const {
-      email,
-      password
-    } = req.body;
-
-    const {
-      user,
       accessToken,
       refreshToken
-    } = await loginUser({
-      email,
-      password
-    });
+    }
+  });
+});
 
-    setRefreshTokenCookie(
-      res,
+
+export const login = asyncHandler(async (req, res) => {
+  const {
+    email,
+    password
+  } = req.body;
+
+  const {
+    user,
+    accessToken,
+    refreshToken
+  } = await loginUser({
+    email,
+    password
+  });
+
+  res.status(200).json({
+    success: true,
+    message: "Login successful",
+
+    data: {
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+        gymId: user.gymId || null
+      },
+
+      accessToken,
       refreshToken
-    );
+    }
+  });
+});
 
-    res.status(200).json({
-      success: true,
 
-      message: "Login successful",
+export const refresh = asyncHandler(async (req, res) => {
+  const { refreshToken } = req.body;
 
-      data: {
-        user: {
-          id: user._id,
-          name: user.name,
-          email: user.email,
-          phone: user.phone,
-          role: user.role,
-          gymId: user.gymId || null
-        },
+  const {
+    accessToken,
+    refreshToken: newRefreshToken
+  } = await refreshUserToken(refreshToken);
 
-        accessToken
-      }
-    });
-  }
-);
+  res.status(200).json({
+    success: true,
 
-export const refresh = asyncHandler(
-  async (req, res) => {
-    const refreshToken =
-      req.cookies.refreshToken;
+    data: {
+      accessToken,
+      refreshToken: newRefreshToken
+    }
+  });
+});
 
-    const {
-      accessToken
-    } = await refreshUserToken(
-      refreshToken
-    );
 
-    res.status(200).json({
-      success: true,
+export const logout = asyncHandler(async (req, res) => {
+  await logoutUser(req.user.userId);
 
-      data: {
-        accessToken
-      }
-    });
-  }
-);
+  res.status(200).json({
+    success: true,
+    message: "Logout successful"
+  });
+});
 
-export const logout = asyncHandler(
-  async (req, res) => {
-    await logoutUser(
-      req.user.userId
-    );
 
-    clearRefreshTokenCookie(res);
+export const me = asyncHandler(async (req, res) => {
+  const user = await getCurrentUser(req.user.userId);
 
-    res.status(200).json({
-      success: true,
+  res.status(200).json({
+    success: true,
 
-      message: "Logout successful"
-    });
-  }
-);
-
-export const me = asyncHandler(
-  async (req, res) => {
-    const user =
-      await getCurrentUser(
-        req.user.userId
-      );
-
-    res.status(200).json({
-      success: true,
-
-      data: {
-        user
-      }
-    });
-  }
-);
+    data: {
+      user
+    }
+  });
+});
