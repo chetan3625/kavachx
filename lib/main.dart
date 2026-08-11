@@ -6,7 +6,7 @@ import 'package:kavachx/Services/api_service.dart';
 import 'package:kavachx/Services/token_refresh_service.dart';
 import 'package:kavachx/VIew/splash.dart';
 import 'package:kavachx/VIew/role_selection_screen.dart';
-import 'package:kavachx/VIew/owner_dashboard_main)view.dart';
+import 'package:kavachx/VIew/owner_dashboard_main_view.dart';
 import 'package:kavachx/VIew/member_dashboard_view.dart';
 import 'bindings/splashbinding.dart';
 
