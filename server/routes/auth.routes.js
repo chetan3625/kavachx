@@ -7,7 +7,10 @@ import {
   login,
   refresh,
   logout,
-  me
+  me,
+  forgotPasswordController,
+  resetPasswordController,
+  changePasswordController
 } from "../controllers/auth/auth.controller.js";
 
 import {
@@ -18,7 +21,10 @@ import {
   validateRegister,
   validateRegisterOwner,
   validateRegisterMember,
-  validateLogin
+  validateLogin,
+  validateForgotPassword,
+  validateResetPassword,
+  validateChangePassword
 } from "../validators/auth.validator.js";
 
 const router = express.Router();
@@ -67,6 +73,29 @@ router.get(
   "/me",
   protect,
   me
+);
+
+
+// POST /api/v1/auth/forgot-password
+router.post(
+  "/forgot-password",
+  validateForgotPassword,
+  forgotPasswordController
+);
+
+// PATCH /api/v1/auth/reset-password/:token
+router.patch(
+  "/reset-password/:token",
+  validateResetPassword,
+  resetPasswordController
+);
+
+// PATCH /api/v1/auth/change-password
+router.patch(
+  "/change-password",
+  protect,
+  validateChangePassword,
+  changePasswordController
 );
 
 export default router;

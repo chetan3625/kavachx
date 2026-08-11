@@ -116,3 +116,41 @@ Description: Gym owner approves a specific join request. Creates a `Membership` 
 Authentication: Required (Bearer access token)
 Description: Gym owner rejects a specific join request.
 
+---
+
+## Password Management
+
+**POST** /auth/forgot-password
+Authentication: No
+Body:
+```json
+{
+  "email": "user@gmail.com"
+}
+```
+Description: Generates a password reset token and sends an email to the user with the reset link.
+
+---
+
+**PATCH** /auth/reset-password/:token
+Authentication: No
+Body:
+```json
+{
+  "password": "newpassword123"
+}
+```
+Description: Resets the user's password using the token provided in the URL and the new password in the request body.
+
+---
+
+**PATCH** /auth/change-password
+Authentication: Required (Bearer access token)
+Body:
+```json
+{
+  "oldPassword": "password123",
+  "newPassword": "newpassword123"
+}
+```
+Description: Allows an authenticated user to change their password by providing their old password.

@@ -89,3 +89,28 @@ export const validateRegisterMember = (req, res, next) => {
 
   next();
 };
+
+export const validateForgotPassword = (req, res, next) => {
+  if (!req.body.email) {
+    return next(new ApiError(400, "Please provide a valid email"));
+  }
+  next();
+};
+
+export const validateResetPassword = (req, res, next) => {
+  if (!req.body.password || req.body.password.length < 8) {
+    return next(new ApiError(400, "Password is required and must be at least 8 characters"));
+  }
+  next();
+};
+
+export const validateChangePassword = (req, res, next) => {
+  const { oldPassword, newPassword } = req.body;
+  if (!oldPassword || !newPassword) {
+    return next(new ApiError(400, "oldPassword and newPassword are required"));
+  }
+  if (newPassword.length < 8) {
+    return next(new ApiError(400, "New password must be at least 8 characters"));
+  }
+  next();
+};

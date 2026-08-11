@@ -5,6 +5,8 @@ import ApiError from "../utils/ApiError.js";
 import { generateAccessToken, generateRefreshToken } from "../utils/generateToken.js";
 import qrcode from "qrcode";
 import { uploadBufferToCloudinary } from "../utils/cloudinary.js";
+import sendEmail from "../utils/sendEmail.js";
+import { env } from "../config/env.js";
 
 export const registerUser = async ({
   name,
@@ -293,3 +295,71 @@ export const registerMember = async ({ name, email, phone, password }) => {
     refreshToken
   };
 };
+
+export const forgotPasswordService = async (email) => {
+  const user = await User.findOne({ email: email.toLowerCase().trim() });
+
+  if (!user) {
+    throw new ApiError(404, "There is no user with that email address.");
+  }
+
+  const resetToken = user.createPasswordResetToken();
+  await user.save({ validateBeforeSave: false });
+
+  const resetUrl = `${env.CLIENT_URL}/reset-password/${resetToken}`;
+
+  const message = `You are receiving this email because you (or someone else) has requested the reset of a password. Please make a PUT request to: \n\n ${resetUrl}`;
+
+  try {
+    await sendEmail({
+      email: user.email,
+      subject: "Password reset token",
+      message,
+    });
+  } catch (error) {
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpire = undefined;
+    await user.save({ validateBeforeSave: false });
+    
+    throw new ApiError(500, "There was an error sending the email. Try again later!");
+  }
+};
+
+export const resetPasswordService = async (token, newPassword) => {
+  const resetPasswordToken = crypto
+    .createHash("sha256")
+    .update(token)
+    .digest("hex");
+
+  const user = await User.findOne({
+    resetPasswordToken,
+    resetPasswordExpire: { $gt: Date.now() },
+  }).select("+password");
+
+  if (!user) {
+    throw new ApiError(400, "Token is invalid or has expired");
+  }
+
+  user.password = newPassword;
+  user.resetPasswordToken = undefined;
+  user.resetPasswordExpire = undefined;
+
+  await user.save();
+};
+
+export const changePasswordService = async (userId, oldPassword, newPassword) => {
+  const user = await User.findById(userId).select("+password");
+
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
+
+  const isPasswordCorrect = await user.comparePassword(oldPassword);
+
+  if (!isPasswordCorrect) {
+    throw new ApiError(401, "Invalid old password");
+  }
+
+  user.password = newPassword;
+  await user.save();
+};

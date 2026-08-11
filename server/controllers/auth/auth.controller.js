@@ -7,7 +7,10 @@ import {
   loginUser,
   refreshUserToken,
   logoutUser,
-  getCurrentUser
+  getCurrentUser,
+  forgotPasswordService,
+  resetPasswordService,
+  changePasswordService
 } from "../../services/auth.service.js";
 
 export const register = asyncHandler(async (req, res) => {
@@ -225,5 +228,38 @@ export const me = asyncHandler(async (req, res) => {
     data: {
       user
     }
+  });
+});
+
+export const forgotPasswordController = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+  await forgotPasswordService(email);
+
+  res.status(200).json({
+    success: true,
+    message: "Password reset link sent to email"
+  });
+});
+
+export const resetPasswordController = asyncHandler(async (req, res) => {
+  const { token } = req.params;
+  const { password } = req.body;
+  
+  await resetPasswordService(token, password);
+
+  res.status(200).json({
+    success: true,
+    message: "Password reset successfully"
+  });
+});
+
+export const changePasswordController = asyncHandler(async (req, res) => {
+  const { oldPassword, newPassword } = req.body;
+  
+  await changePasswordService(req.user.userId, oldPassword, newPassword);
+
+  res.status(200).json({
+    success: true,
+    message: "Password changed successfully"
   });
 });
