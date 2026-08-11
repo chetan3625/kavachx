@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:kavachx/Constants/app_theme.dart';
-import 'package:kavachx/VIew/splash.dart';
 import 'package:get/get.dart';
-
+import 'package:kavachx/Constants/app_theme.dart';
+import 'package:kavachx/Services/api_service.dart';
+import 'package:kavachx/VIew/splash.dart';
 import 'bindings/splashbinding.dart';
+
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Inject ApiService globally before running the app
+  Get.put(ApiService(), permanent: true);
+
   runApp(const KavachXApp());
 }
 

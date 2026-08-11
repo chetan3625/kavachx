@@ -2,7 +2,7 @@ import User from "../models/User.js";
 import Gym from "../models/Gym.js";
 import crypto from "crypto";
 import ApiError from "../utils/ApiError.js";
-import { generateAccessToken, generateRefreshToken } from "../utils/GenerateToken.js";
+import { generateAccessToken, generateRefreshToken } from "../utils/generateToken.js";
 
 export const registerUser = async ({
   name,

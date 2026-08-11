@@ -1,4 +1,4 @@
-import asyncHandler from "../../utils/asyncHandler.js";
+import asyncHandler from "../../utils/AsyncHandler.js";
 
 import {
   registerUser,
@@ -13,7 +13,7 @@ import {
 import {
   setRefreshTokenCookie,
   clearRefreshTokenCookie
-} from "../../utils/cookies.js";
+} from "../../utils/Cookies.js";
 
 export const register = asyncHandler(
   async (req, res) => {

@@ -10,6 +10,7 @@ class AuthView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Instantiate controller with the passed role
     final AuthController controller = Get.put(
       AuthController(role: role),
       tag: role.name,
@@ -45,7 +46,7 @@ class AuthView extends StatelessWidget {
               ),
             ),
 
-            // 2. Foreground Form Content (Inside SafeArea)
+            // 2. Foreground Form Content
             SafeArea(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(horizontal: 24.0),
@@ -163,8 +164,10 @@ class AuthView extends StatelessWidget {
                       final isRegister = controller.selectedTab.value == 1;
 
                       return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           if (isRegister) ...[
+                            // User Full Name
                             TextField(
                               controller: controller.nameController,
                               style: const TextStyle(color: Colors.white),
@@ -175,16 +178,78 @@ class AuthView extends StatelessWidget {
                             ),
                             const SizedBox(height: 16),
                           ],
+
+                          // User Email
                           TextField(
-                            controller: controller.phoneController,
-                            keyboardType: TextInputType.phone,
+                            controller: controller.emailController,
+                            keyboardType: TextInputType.emailAddress,
                             style: const TextStyle(color: Colors.white),
                             decoration: const InputDecoration(
-                              hintText: 'Phone Number',
-                              prefixIcon: Icon(Icons.phone_android_rounded),
+                              hintText: 'Email Address',
+                              prefixIcon: Icon(Icons.email_outlined),
                             ),
                           ),
                           const SizedBox(height: 16),
+
+                          if (isRegister) ...[
+                            // User Phone Number
+                            TextField(
+                              controller: controller.phoneController,
+                              keyboardType: TextInputType.phone,
+                              style: const TextStyle(color: Colors.white),
+                              decoration: const InputDecoration(
+                                hintText: 'Phone Number',
+                                prefixIcon: Icon(Icons.phone_android_rounded),
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+
+                            // Dynamic Gym Details Section (Owner Only)
+                            if (role == UserRole.gymOwner) ...[
+                              const Padding(
+                                padding: EdgeInsets.symmetric(vertical: 8.0),
+                                child: Text(
+                                  'GYM DETAILS',
+                                  style: TextStyle(
+                                    color: Color(0xFFFF3B30),
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 1.2,
+                                  ),
+                                ),
+                              ),
+                              TextField(
+                                controller: controller.gymNameController,
+                                style: const TextStyle(color: Colors.white),
+                                decoration: const InputDecoration(
+                                  hintText: 'Gym Name',
+                                  prefixIcon: Icon(Icons.fitness_center_rounded),
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              TextField(
+                                controller: controller.gymPhoneController,
+                                keyboardType: TextInputType.phone,
+                                style: const TextStyle(color: Colors.white),
+                                decoration: const InputDecoration(
+                                  hintText: 'Gym Contact Phone',
+                                  prefixIcon: Icon(Icons.contact_phone_outlined),
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              TextField(
+                                controller: controller.gymAddressController,
+                                style: const TextStyle(color: Colors.white),
+                                decoration: const InputDecoration(
+                                  hintText: 'Gym Address / Location',
+                                  prefixIcon: Icon(Icons.location_on_outlined),
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                            ],
+                          ],
+
+                          // Password
                           TextField(
                             controller: controller.passwordController,
                             obscureText: true,
@@ -200,12 +265,25 @@ class AuthView extends StatelessWidget {
 
                     const SizedBox(height: 32),
 
-                    // Submit Button
+                    // Submit Button with Loading State
                     Obx(() => ElevatedButton(
-                          onPressed: controller.submitAuth,
-                          child: Text(
-                            controller.selectedTab.value == 0 ? 'LOGIN' : 'REGISTER',
-                          ),
+                          onPressed: controller.isLoading.value
+                              ? null
+                              : controller.submitAuth,
+                          child: controller.isLoading.value
+                              ? const SizedBox(
+                                  width: 24,
+                                  height: 24,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : Text(
+                                  controller.selectedTab.value == 0
+                                      ? 'LOGIN'
+                                      : 'REGISTER',
+                                ),
                         )),
                     const SizedBox(height: 24),
                   ],
