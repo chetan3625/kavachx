@@ -98,8 +98,11 @@ export const registerOwnerController = asyncHandler(async (req, res) => {
         name: gym.name
       },
 
-      qrUrl,
-      joinUrl,
+      qr: {
+        token: gymToken,
+        joinUrl: joinUrl,
+        qrUrl: qrUrl
+      },
 
       accessToken,
       refreshToken
