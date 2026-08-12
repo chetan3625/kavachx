@@ -239,6 +239,9 @@ export const registerOwner = async ({
     const qrBuffer = await qrcode.toBuffer(joinUrl);
     const uploadResult = await uploadBufferToCloudinary(qrBuffer, "kavachx_gym_qrs");
     qrUrl = uploadResult.secure_url;
+
+    gym.qrUrl = qrUrl;
+    await gym.save({ validateBeforeSave: false });
   } catch (error) {
     console.error("Failed to generate or upload QR code:", error);
   }

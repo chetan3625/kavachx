@@ -33,6 +33,10 @@ const gymSchema = new mongoose.Schema(
     isActive: {
       type: Boolean,
       default: true
+    },
+    
+    qrUrl: {
+      type: String
     }
   },
   {
