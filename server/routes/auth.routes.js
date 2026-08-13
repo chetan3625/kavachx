@@ -11,17 +11,30 @@ import {
   changePassword,
 } from "../controllers/auth/auth.controller.js";
 import { protect } from "../middleware/auth.middleware.js";
+import {
+  validateRegisterOwner,
+  validateRegisterMember,
+  validateLogin,
+  validateForgotPassword,
+  validateResetPassword,
+  validateChangePassword,
+} from "../validators/auth.validator.js";
 
 const router = express.Router();
 
-router.post("/register-owner", registerOwner);
-router.post("/register-member", registerMember);
-router.post("/login", login);
+router.post("/register-owner", validateRegisterOwner, registerOwner);
+router.post("/register-member", validateRegisterMember, registerMember);
+router.post("/login", validateLogin, login);
 router.post("/refresh", refresh);
 router.post("/logout", protect, logout);
 router.get("/me", protect, getMe);
-router.post("/forgot-password", forgotPassword);
-router.patch("/reset-password/:token", resetPassword);
-router.patch("/change-password", protect, changePassword);
+router.post("/forgot-password", validateForgotPassword, forgotPassword);
+router.patch("/reset-password/:token", validateResetPassword, resetPassword);
+router.patch(
+  "/change-password",
+  protect,
+  validateChangePassword,
+  changePassword,
+);
 
 export default router;
