@@ -94,6 +94,10 @@ export const forgotPassword = asyncHandler(async (req, res, next) => {
   res.status(200).json({ success: true, message: "Password reset email sent" });
 });
 
+
+
+
+
 export const resetPassword = asyncHandler(async (req, res, next) => {
   await resetPasswordService(req.params.token, req.body.password);
   res
