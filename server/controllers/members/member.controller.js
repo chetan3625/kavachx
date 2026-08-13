@@ -145,7 +145,6 @@ export const memberCheckIn = async (req, res, next) => {
     const { dateStr } = req.body || {};
     const checkInDateStr = dateStr || getTodayDateStr();
 
-    // Check if attendance record already exists for today
     const existingAttendance = await Attendance.findOne({
       memberId: userId,
       $or: [{ dateStr: checkInDateStr }, { dateString: checkInDateStr }],
@@ -191,86 +190,7 @@ export const memberCheckIn = async (req, res, next) => {
     next(error);
   }
 };
-// GET /api/v1/members/subscription/current
-export const getCurrentSubscription = async (req, res, next) => {
-  try {
-    const userId = req.user.userId;
-    const membership = await Membership.findOne({
-      memberId: userId,
-      status: { $in: ["active", "trial"] },
-    }).populate("gymId", "name");
 
-    if (membership) {
-      const now = new Date();
-      const isExpired = membership.endDate && new Date(membership.endDate) < now;
-      const status = isExpired ? "expired" : membership.status;
-
-      return res.status(200).json({
-        success: true,
-        data: {
-          id: membership._id.toString(),
-          planName: membership.planName || "Trial Pass",
-          price: membership.price || 0,
-          durationInMonths: membership.durationInMonths || 0,
-          startDate: membership.startDate || membership.createdAt,
-          endDate: membership.endDate,
-          status,
-          isTrial: membership.status === "trial",
-          features: membership.features || [
-            "Full Gym Equipment Access",
-            "Free Trainer Guidance",
-            "Locker & Shower Facilities",
-          ],
-        },
-      });
-    }
-
-    return res.status(200).json({
-      success: true,
-      data: null,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-// GET /api/v1/members/plans
-export const getAvailablePlans = async (req, res, next) => {
-  try {
-    const userId = req.user.userId;
-    let enrolledGymId = null;
-
-    if (userId) {
-      const user = await User.findById(userId).select("gymId");
-      if (user && user.gymId) {
-        enrolledGymId = user.gymId;
-      }
-    }
-
-    if (!enrolledGymId) {
-      return res.status(200).json({
-        success: true,
-        data: [],
-      });
-    }
-
-    // Strictly fetch plans created by the member's associated gym owner
-    const plans = await MembershipPlan.find({ gymId: enrolledGymId }).sort({ price: 1 });
-
-    return res.status(200).json({
-      success: true,
-      data: plans.map((plan) => ({
-        id: plan._id.toString(),
-        name: plan.name,
-        price: plan.price,
-        durationInMonths: plan.durationInMonths,
-        features: plan.features,
-      })),
-    });
-  } catch (error) {
-    next(error);
-  }
-};
 // POST /api/v1/members/check-out
 export const memberCheckOut = async (req, res, next) => {
   try {
@@ -288,7 +208,6 @@ export const memberCheckOut = async (req, res, next) => {
     );
 
     if (!attendance) {
-      // Fallback update any active checked_in attendance
       await Attendance.findOneAndUpdate(
         { memberId: userId, status: "checked_in" },
         { checkOutTime: new Date(), status: "checked_out" },
@@ -310,7 +229,7 @@ export const memberCheckOut = async (req, res, next) => {
   }
 };
 
-// POST /api/v1/members/exercises - Create new exercise in workout routine
+// POST /api/v1/members/exercises
 export const createExercise = async (req, res, next) => {
   try {
     const userId = req.user.userId;
@@ -366,7 +285,7 @@ export const createExercise = async (req, res, next) => {
   }
 };
 
-// GET /api/v1/members/exercises - Fetch exercises for date
+// GET /api/v1/members/exercises
 export const getExercises = async (req, res, next) => {
   try {
     const userId = req.user.userId;
@@ -426,12 +345,10 @@ export const updateProfile = async (req, res, next) => {
       }
     });
 
-    // Normalize gender to lowercase to match Mongoose schema enum ['male', 'female', 'other', '']
     if (typeof updateData.gender === "string") {
       updateData.gender = updateData.gender.toLowerCase().trim();
     }
 
-    // Sync height / heightCm aliases
     if (req.body.heightCm !== undefined) {
       updateData.height = req.body.heightCm;
     }
@@ -456,7 +373,7 @@ export const updateProfile = async (req, res, next) => {
   }
 };
 
-// PUT /api/v1/members/exercises/:id - Update exercise details
+// PUT /api/v1/members/exercises/:id
 export const updateExercise = async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -515,7 +432,7 @@ export const updateExercise = async (req, res, next) => {
   }
 };
 
-// DELETE /api/v1/members/exercises/:id - Delete exercise
+// DELETE /api/v1/members/exercises/:id
 export const deleteExercise = async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -547,7 +464,7 @@ export const deleteExercise = async (req, res, next) => {
   }
 };
 
-// POST /api/v1/members/workout-summary - Save daily workout log summary
+// POST /api/v1/members/workout-summary
 export const logWorkoutSummary = async (req, res, next) => {
   try {
     const userId = req.user.userId;
@@ -641,24 +558,30 @@ export const getCurrentSubscription = async (req, res, next) => {
     const userId = req.user.userId;
     const membership = await Membership.findOne({
       memberId: userId,
-      status: "active",
+      status: { $in: ["active", "trial"] },
     }).populate("gymId", "name");
 
     if (membership) {
+      const now = new Date();
+      const isExpired =
+        membership.endDate && new Date(membership.endDate) < now;
+      const status = isExpired ? "expired" : membership.status;
+
       return res.status(200).json({
         success: true,
         data: {
           id: membership._id.toString(),
-          planName: membership.planName || "Active Membership",
+          planName: membership.planName || "Trial Pass",
           price: membership.price || 0,
-          durationInMonths: membership.durationInMonths || 1,
-          startDate: membership.createdAt || membership.joinedAt || new Date(),
-          endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-          status: membership.status || "active",
+          durationInMonths: membership.durationInMonths || 0,
+          startDate: membership.startDate || membership.createdAt,
+          endDate: membership.endDate,
+          status,
+          isTrial: membership.status === "trial",
           features: membership.features || [
-            "Gym Equipment Access",
-            "Locker Room",
-            "Trainer Assistance",
+            "Full Gym Equipment Access",
+            "Free Trainer Guidance",
+            "Locker & Shower Facilities",
           ],
         },
       });
@@ -683,28 +606,19 @@ export const getAvailablePlans = async (req, res, next) => {
       const user = await User.findById(userId).select("gymId");
       if (user && user.gymId) {
         enrolledGymId = user.gymId;
-      } else {
-        const membership = await Membership.findOne({
-          memberId: userId,
-        }).select("gymId");
-        if (membership && membership.gymId) {
-          enrolledGymId = membership.gymId;
-          await User.findByIdAndUpdate(userId, { gymId: enrolledGymId });
-        } else {
-        }
       }
     }
 
-    let plans = [];
-    if (enrolledGymId) {
-      plans = await MembershipPlan.find({ gymId: enrolledGymId }).sort({
-        price: 1,
+    if (!enrolledGymId) {
+      return res.status(200).json({
+        success: true,
+        data: [],
       });
     }
 
-    if (!plans || plans.length === 0) {
-      plans = await MembershipPlan.find({}).sort({ price: 1 });
-    }
+    const plans = await MembershipPlan.find({ gymId: enrolledGymId }).sort({
+      price: 1,
+    });
 
     return res.status(200).json({
       success: true,
