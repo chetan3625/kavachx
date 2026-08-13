@@ -1,46 +1,26 @@
 import mongoose from "mongoose";
 
-const gymJoinRequestSchema = new mongoose.Schema(
+const joinRequestSchema = new mongoose.Schema(
   {
-    memberId: {
+    userId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      required: true
+      required: true,
+      index: true,
     },
-
     gymId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Gym",
-      required: true
+      required: true,
+      index: true,
     },
-
     status: {
       type: String,
       enum: ["pending", "approved", "rejected"],
-      default: "pending"
+      default: "pending",
     },
-
-    requestedAt: {
-      type: Date,
-      default: Date.now
-    },
-
-    reviewedAt: {
-      type: Date,
-      default: null
-    },
-
-    reviewedBy: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      default: null
-    }
   },
-  {
-    timestamps: true
-  }
+  { timestamps: true },
 );
 
-const GymJoinRequest = mongoose.model("GymJoinRequest", gymJoinRequestSchema);
-
-export default GymJoinRequest;
+export default mongoose.model("JoinRequest", joinRequestSchema);

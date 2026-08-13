@@ -8,27 +8,10 @@ const membershipPlanSchema = new mongoose.Schema(
       required: true,
       index: true,
     },
-    name: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-    price: {
-      type: Number,
-      required: true,
-      min: 0,
-    },
-    durationInMonths: {
-      type: Number,
-      required: true,
-      min: 1,
-    },
-    features: [
-      {
-        type: String,
-        trim: true,
-      },
-    ],
+    name: { type: String, required: true, trim: true },
+    price: { type: Number, required: true, min: 0 },
+    durationInMonths: { type: Number, required: true, min: 1 },
+    features: [{ type: String, trim: true }],
   },
   { timestamps: true },
 );

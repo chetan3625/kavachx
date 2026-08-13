@@ -1,76 +1,43 @@
 import jwt from "jsonwebtoken";
 
-import { env } from "../config/env.js";
-import ApiError from "../utils/ApiError.js";
+export const protect = async (req, res, next) => {
+  let token;
 
-export const protect = (
-  req,
-  res,
-  next
-) => {
+  if (
+    req.headers.authorization &&
+    req.headers.authorization.startsWith("Bearer")
+  ) {
+    token = req.headers.authorization.split(" ")[1];
+  }
+
+  if (!token) {
+    return res
+      .status(401)
+      .json({ success: false, message: "Not authorized, no token provided." });
+  }
+
   try {
-    const authHeader =
-      req.headers.authorization;
-
-    if (
-      !authHeader ||
-      !authHeader.startsWith("Bearer ")
-    ) {
-      return next(
-        new ApiError(
-          401,
-          "Authentication required"
-        )
-      );
-    }
-
-    const token =
-      authHeader.split(" ")[1];
-
-    const decoded = jwt.verify(
-      token,
-      env.JWT_ACCESS_SECRET
-    );
-
-    req.user = decoded;
-
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded; // Contains userId and role
     next();
   } catch (error) {
-    return next(
-      new ApiError(
-        401,
-        "Invalid or expired access token"
-      )
-    );
+    return res
+      .status(401)
+      .json({
+        success: false,
+        message: "Not authorized, token invalid or expired.",
+      });
   }
 };
 
-export const authorize = (
-  ...allowedRoles
-) => {
+export const authorize = (...roles) => {
   return (req, res, next) => {
-    if (!req.user) {
-      return next(
-        new ApiError(
-          401,
-          "Authentication required"
-        )
-      );
+    if (!roles.includes(req.user.role)) {
+      return res.status(403).json({
+        success: false,
+        message: `User role '${req.user.role}' is not authorized to access this resource.`,
+      });
     }
-
-    if (
-      !allowedRoles.includes(
-        req.user.role
-      )
-    ) {
-      return next(
-        new ApiError(
-          403,
-          "You do not have permission to perform this action"
-        )
-      );
-    }
-
     next();
   };
 };

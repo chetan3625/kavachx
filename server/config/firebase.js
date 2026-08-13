@@ -1,6 +1,6 @@
 import admin from "firebase-admin";
 
-// Safe optional chaining check for admin and admin.apps
+// Safe check for ESM compatibility
 if (admin && admin.apps && admin.apps.length === 0) {
   try {
     if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_CLIENT_EMAIL) {
@@ -15,87 +15,47 @@ if (admin && admin.apps && admin.apps.length === 0) {
       });
       console.log("[Firebase] Admin initialized successfully.");
     } else {
-      console.log("[Firebase] Credentials missing in .env — FCM push skipped.");
+      console.log("[Firebase] Credentials missing in environment — FCM push skipped.");
     }
   } catch (err) {
     console.log("[Firebase] Initialization skipped:", err.message);
   }
 }
 
-// 1. Single Token Push Notification
-export const sendPushNotification = async (
-  fcmToken,
-  title,
-  body,
-  data = {},
-) => {
+export const sendPushNotification = async (fcmToken, title, body, data = {}) => {
   if (!admin || !admin.apps || admin.apps.length === 0 || !fcmToken) {
-    console.log(
-      "[Firebase] Skipping single push notification (FCM not ready).",
-    );
     return null;
   }
 
   const message = {
     token: fcmToken,
     notification: { title, body },
-    data: {
-      ...data,
-      click_action: "FLUTTER_NOTIFICATION_CLICK",
-    },
+    data: { ...data, click_action: "FLUTTER_NOTIFICATION_CLICK" },
   };
 
   try {
-    const response = await admin.messaging().send(message);
-    console.log("[Firebase] Successfully sent single notification:", response);
-    return response;
+    return await admin.messaging().send(message);
   } catch (error) {
-    console.error(
-      "[Firebase] Error sending single push notification:",
-      error.message,
-    );
+    console.error("[Firebase Error] Single push failed:", error.message);
     return null;
   }
 };
 
-// 2. Multicast Batch Push Notifications
-export const sendMultiplePushNotifications = async (
-  fcmTokens,
-  title,
-  body,
-  data = {},
-) => {
-  if (
-    !admin ||
-    !admin.apps ||
-    admin.apps.length === 0 ||
-    !fcmTokens ||
-    fcmTokens.length === 0
-  ) {
-    console.log("[Firebase] Skipping multicast push notification.");
+export const sendMultiplePushNotifications = async (fcmTokens, title, body, data = {}) => {
+  if (!admin || !admin.apps || admin.apps.length === 0 || !fcmTokens || fcmTokens.length === 0) {
     return null;
   }
 
   const message = {
     tokens: fcmTokens,
     notification: { title, body },
-    data: {
-      ...data,
-      click_action: "FLUTTER_NOTIFICATION_CLICK",
-    },
+    data: { ...data, click_action: "FLUTTER_NOTIFICATION_CLICK" },
   };
 
   try {
-    const response = await admin.messaging().sendEachForMulticast(message);
-    console.log(
-      `[Firebase] Successfully sent ${response.successCount} multicast messages.`,
-    );
-    return response;
+    return await admin.messaging().sendEachForMulticast(message);
   } catch (error) {
-    console.error(
-      "[Firebase] Error sending multicast notifications:",
-      error.message,
-    );
+    console.error("[Firebase Error] Multicast push failed:", error.message);
     return null;
   }
 };

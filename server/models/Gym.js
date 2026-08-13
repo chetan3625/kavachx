@@ -2,53 +2,18 @@ import mongoose from "mongoose";
 
 const gymSchema = new mongoose.Schema(
   {
-    name: {
-      type: String,
-      required: true,
-      trim: true
-    },
-
     ownerId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      required: true
+      required: true,
+      index: true,
     },
-
-    phone: {
-      type: String,
-      trim: true
-    },
-
-    address: {
-      type: String,
-      trim: true
-    },
-
-    gymToken: {
-      type: String,
-      unique: true,
-      required: true
-    },
-
-    qrUrl: {
-      type: String,
-      default: null
-    },
-
-    isActive: {
-      type: Boolean,
-      default: true
-    },
-    
-    qrUrl: {
-      type: String
-    }
+    name: { type: String, required: true, trim: true },
+    address: { type: String, required: true },
+    phone: { type: String, required: true },
+    isActive: { type: Boolean, default: true },
   },
-  {
-    timestamps: true
-  }
+  { timestamps: true },
 );
 
-const Gym = mongoose.model("Gym", gymSchema);
-
-export default Gym;
+export default mongoose.model("Gym", gymSchema);

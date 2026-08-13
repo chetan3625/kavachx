@@ -8,36 +8,11 @@ const notificationSchema = new mongoose.Schema(
       required: true,
       index: true,
     },
-    gymId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Gym",
-      default: null,
-    },
-    title: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-    message: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-    type: {
-      type: String,
-      enum: [
-        "announcement",
-        "payment",
-        "general",
-        "membership_expiry",
-        "water_reminder",
-      ],
-      default: "general",
-    },
-    isRead: {
-      type: Boolean,
-      default: false,
-    },
+    gymId: { type: mongoose.Schema.Types.ObjectId, ref: "Gym", required: true },
+    title: { type: String, required: true },
+    message: { type: String, required: true },
+    type: { type: String, default: "announcement" },
+    isRead: { type: Boolean, default: false },
   },
   { timestamps: true },
 );

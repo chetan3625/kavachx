@@ -18,13 +18,13 @@ import { protect, authorize } from "../middleware/auth.middleware.js";
 
 const router = express.Router();
 
-// Membership Plans Endpoints
+// Plans
 router.get("/plans", protect, authorize("gym_owner"), getPlans);
 router.post("/plans", protect, authorize("gym_owner"), createPlan);
 router.put("/plans/:id", protect, authorize("gym_owner"), updatePlan);
 router.delete("/plans/:id", protect, authorize("gym_owner"), deletePlan);
 
-// Members & Join Requests
+// Join Requests & Members
 router.post("/join-request", protect, authorize("gym_member"), joinRequest);
 router.get(
   "/join-requests",
@@ -52,7 +52,7 @@ router.get(
   getInactiveMembers,
 );
 
-// Broadcast Notifications
+// Announcements
 router.post("/announce", protect, authorize("gym_owner"), sendGymAnnouncement);
 
 export default router;
