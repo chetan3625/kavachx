@@ -16,12 +16,12 @@ const membershipSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["active", "inactive", "expired"],
-      default: "active",
+      enum: ["active", "trial", "inactive", "expired"],
+      default: "trial",
     },
     planName: {
       type: String,
-      default: "Active Membership",
+      default: "7-Day Free Trial",
     },
     price: {
       type: Number,
@@ -29,7 +29,11 @@ const membershipSchema = new mongoose.Schema(
     },
     durationInMonths: {
       type: Number,
-      default: 1,
+      default: 0,
+    },
+    trialDays: {
+      type: Number,
+      default: 7,
     },
     startDate: {
       type: Date,
@@ -37,9 +41,20 @@ const membershipSchema = new mongoose.Schema(
     },
     endDate: {
       type: Date,
-      default: null,
+      default: function () {
+        const d = new Date();
+        d.setDate(d.getDate() + 7); // Default 7 Days Free Trial
+        return d;
+      },
     },
-    features: [{ type: String }],
+    features: {
+      type: [String],
+      default: [
+        "Full Gym Equipment Access",
+        "Free Trainer Guidance",
+        "Locker & Shower Facilities",
+      ],
+    },
     joinedAt: {
       type: Date,
       default: Date.now,

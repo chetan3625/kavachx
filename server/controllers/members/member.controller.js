@@ -191,7 +191,86 @@ export const memberCheckIn = async (req, res, next) => {
     next(error);
   }
 };
+// GET /api/v1/members/subscription/current
+export const getCurrentSubscription = async (req, res, next) => {
+  try {
+    const userId = req.user.userId;
+    const membership = await Membership.findOne({
+      memberId: userId,
+      status: { $in: ["active", "trial"] },
+    }).populate("gymId", "name");
 
+    if (membership) {
+      const now = new Date();
+      const isExpired = membership.endDate && new Date(membership.endDate) < now;
+      const status = isExpired ? "expired" : membership.status;
+
+      return res.status(200).json({
+        success: true,
+        data: {
+          id: membership._id.toString(),
+          planName: membership.planName || "Trial Pass",
+          price: membership.price || 0,
+          durationInMonths: membership.durationInMonths || 0,
+          startDate: membership.startDate || membership.createdAt,
+          endDate: membership.endDate,
+          status,
+          isTrial: membership.status === "trial",
+          features: membership.features || [
+            "Full Gym Equipment Access",
+            "Free Trainer Guidance",
+            "Locker & Shower Facilities",
+          ],
+        },
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: null,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// GET /api/v1/members/plans
+export const getAvailablePlans = async (req, res, next) => {
+  try {
+    const userId = req.user.userId;
+    let enrolledGymId = null;
+
+    if (userId) {
+      const user = await User.findById(userId).select("gymId");
+      if (user && user.gymId) {
+        enrolledGymId = user.gymId;
+      }
+    }
+
+    if (!enrolledGymId) {
+      return res.status(200).json({
+        success: true,
+        data: [],
+      });
+    }
+
+    // Strictly fetch plans created by the member's associated gym owner
+    const plans = await MembershipPlan.find({ gymId: enrolledGymId }).sort({ price: 1 });
+
+    return res.status(200).json({
+      success: true,
+      data: plans.map((plan) => ({
+        id: plan._id.toString(),
+        name: plan.name,
+        price: plan.price,
+        durationInMonths: plan.durationInMonths,
+        features: plan.features,
+      })),
+    });
+  } catch (error) {
+    next(error);
+  }
+}P
 // POST /api/v1/members/check-out
 export const memberCheckOut = async (req, res, next) => {
   try {

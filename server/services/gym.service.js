@@ -45,7 +45,6 @@ export const createJoinRequest = async (memberId, gymToken) => {
     .populate("userId", "name email phone role gymId isOnboarded")
     .populate("gymId", "name phone address gymToken qrUrl");
 
-  // Emit real-time Socket.IO event to Gym Owner's room
   try {
     const io = getIO();
     const ownerIdStr = gym.ownerId._id
@@ -53,9 +52,6 @@ export const createJoinRequest = async (memberId, gymToken) => {
       : gym.ownerId.toString();
     const gymIdStr = gym._id.toString();
 
-    console.log(
-      `[SOCKET.IO SERVER] Emitting new_join_request to rooms: owner_${ownerIdStr} and gym_${gymIdStr}`,
-    );
     io.to(`owner_${ownerIdStr}`).emit("new_join_request", populatedReq);
     io.to(`gym_${gymIdStr}`).emit("new_join_request", populatedReq);
   } catch (err) {
@@ -110,14 +106,34 @@ export const approveJoinRequest = async (requestId, ownerId) => {
   reqDoc.reviewedBy = ownerId;
   await reqDoc.save();
 
-  // 2. Create or update active Membership
+  // 2. Set up 7-Day Trial Membership
+  const startDate = new Date();
+  const endDate = new Date();
+  endDate.setDate(endDate.getDate() + 7);
+
   await Membership.findOneAndUpdate(
     { memberId: reqDoc.userId, gymId: reqDoc.gymId },
-    { memberId: reqDoc.userId, gymId: reqDoc.gymId, status: "active" },
+    {
+      memberId: reqDoc.userId,
+      gymId: reqDoc.gymId,
+      status: "trial",
+      planName: "7-Day Free Trial",
+      price: 0,
+      durationInMonths: 0,
+      trialDays: 7,
+      startDate,
+      endDate,
+      features: [
+        "Full Gym Equipment Access",
+        "Free Trainer Guidance",
+        "Locker & Shower Facilities",
+      ],
+      joinedAt: startDate,
+    },
     { upsert: true, new: true },
   );
 
-  // 3. Link gymId to User and populate updated user details
+  // 3. Link user doc to gym
   const updatedUser = await User.findByIdAndUpdate(
     reqDoc.userId,
     { gymId: reqDoc.gymId, isApproved: true },
@@ -145,7 +161,6 @@ export const approveJoinRequest = async (requestId, ownerId) => {
     },
   };
 
-  // 4. Emit real-time Socket.IO event to Member & Owner rooms
   try {
     const io = getIO();
     const memberIdStr = reqDoc.userId._id
@@ -155,12 +170,9 @@ export const approveJoinRequest = async (requestId, ownerId) => {
       ? ownerId._id.toString()
       : ownerId.toString();
 
-    console.log(
-      `[SOCKET.IO SERVER] Emitting join_request_updated (approved) to member_${memberIdStr} and owner_${ownerIdStr}`,
-    );
     io.to(`member_${memberIdStr}`).emit("join_request_updated", socketPayload);
     io.to(`owner_${ownerIdStr}`).emit("join_request_updated", socketPayload);
-    io.emit("join_request_updated", socketPayload); // Fallback broadcast
+    io.emit("join_request_updated", socketPayload);
   } catch (err) {
     console.error("Socket emit error (approveJoinRequest):", err.message);
   }
@@ -197,7 +209,6 @@ export const rejectJoinRequest = async (requestId, ownerId) => {
     gym: gym,
   };
 
-  // Emit real-time Socket.IO event
   try {
     const io = getIO();
     const memberIdStr = reqDoc.userId._id
@@ -207,12 +218,9 @@ export const rejectJoinRequest = async (requestId, ownerId) => {
       ? ownerId._id.toString()
       : ownerId.toString();
 
-    console.log(
-      `[SOCKET.IO SERVER] Emitting join_request_updated (rejected) to member_${memberIdStr} and owner_${ownerIdStr}`,
-    );
     io.to(`member_${memberIdStr}`).emit("join_request_updated", socketPayload);
     io.to(`owner_${ownerIdStr}`).emit("join_request_updated", socketPayload);
-    io.emit("join_request_updated", socketPayload); // Fallback broadcast
+    io.emit("join_request_updated", socketPayload);
   } catch (err) {
     console.error("Socket emit error (rejectJoinRequest):", err.message);
   }
