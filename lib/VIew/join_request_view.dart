@@ -3,7 +3,7 @@ import 'package:get/get.dart';
 import 'package:kavachx/Controller/join_request_controller.dart';
 
 class JoinRequestsView extends StatelessWidget {
-  const JoinRequestsView({Key? key}) : super(key: key);
+  const JoinRequestsView({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -33,7 +33,7 @@ class JoinRequestsView extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFFF3B30).withOpacity(0.15),
+                        color: const Color(0xFFFF3B30).withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(color: const Color(0xFFFF3B30)),
                       ),
@@ -96,7 +96,7 @@ class JoinRequestsView extends StatelessWidget {
 
                 return ListView.separated(
                   itemCount: controller.requests.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 12),
+                  separatorBuilder: (_, _) => const SizedBox(height: 12),
                   itemBuilder: (context, index) {
                     final item = controller.requests[index];
                     return Obx(() {
@@ -106,7 +106,7 @@ class JoinRequestsView extends StatelessWidget {
                       return Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF1C1C22).withOpacity(0.85),
+                          color: const Color(0xFF1C1C22).withValues(alpha: 0.85),
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(color: const Color(0xFF2A2A34)),
                         ),
@@ -117,7 +117,7 @@ class JoinRequestsView extends StatelessWidget {
                               children: [
                                 CircleAvatar(
                                   backgroundColor:
-                                      const Color(0xFFFF3B30).withOpacity(0.15),
+                                      const Color(0xFFFF3B30).withValues(alpha: 0.15),
                                   child: Text(
                                     item.user.name.isNotEmpty
                                         ? item.user.name[0].toUpperCase()

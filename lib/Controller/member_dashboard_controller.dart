@@ -1,96 +1,250 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:kavachx/Model/exercise_model.dart';
 import 'package:kavachx/Services/api_service.dart';
-
-class GymSlotModel {
-  final String id;
-  final String time;
-  final int capacity;
-  final int bookedCount;
-
-  GymSlotModel({
-    required this.id,
-    required this.time,
-    required this.capacity,
-    required this.bookedCount,
-  });
-
-  bool get isFull => bookedCount >= capacity;
-}
 
 class MemberDashboardController extends GetxController {
   final ApiService _apiService = Get.find<ApiService>();
 
-  // Bottom Navigation Index (0 = Home/Check-In, 1 = Book Slot, 2 = Profile)
   final RxInt selectedBottomIndex = 0.obs;
-
-  // State Variables
-  final gymTokenController = TextEditingController();
-  final RxBool isSubmittingJoin = false.obs;
-  final RxBool hasJoinedGym = false.obs;
   final RxBool isCheckedIn = false.obs;
-  final RxString selectedSlotId = ''.obs;
+  final RxBool hasCompletedTodayAttendance = false.obs;
+  final RxBool isLoading = false.obs;
 
-  // Mock Available Gym Slots
-  final RxList<GymSlotModel> availableSlots = <GymSlotModel>[
-    GymSlotModel(id: '1', time: '06:00 AM - 07:00 AM', capacity: 15, bookedCount: 12),
-    GymSlotModel(id: '2', time: '07:00 AM - 08:00 AM', capacity: 15, bookedCount: 15),
-    GymSlotModel(id: '3', time: '08:00 AM - 09:00 AM', capacity: 15, bookedCount: 8),
-    GymSlotModel(id: '4', time: '05:00 PM - 06:00 PM', capacity: 20, bookedCount: 18),
-    GymSlotModel(id: '5', time: '06:00 PM - 07:00 PM', capacity: 20, bookedCount: 20),
-    GymSlotModel(id: '6', time: '07:00 PM - 08:00 PM', capacity: 20, bookedCount: 10),
-  ].obs;
+  // Streak & Activity Stats
+  final RxInt currentStreakDays = 5.obs;
+  final RxList<bool> weeklyActivity = <bool>[
+    true,
+    true,
+    true,
+    false,
+    false,
+    false,
+    false,
+  ].obs; // M T W T F S S
+
+  // Hydration Tracker
+  final RxDouble currentWaterLitres = 2.5.obs;
+  final RxDouble targetWaterLitres = 4.0.obs;
+  final RxInt waterGlasses = 10.obs;
+
+  // Body Metrics
+  final RxDouble currentWeightKg = 74.5.obs;
+  final RxDouble targetWeightKg = 70.0.obs;
+
+  // Exercise & Target Stats
+  final RxString todayTargetPart = 'Chest & Triceps'.obs;
+  final RxList<ExerciseModel> todayExercises = <ExerciseModel>[].obs;
+  final RxString userFirstName = 'Member'.obs;
+  final RxBool isAssociatedWithGym = false.obs;
+  final RxString gymName = ''.obs;
 
   @override
   void onInit() {
     super.onInit();
-    _checkGymAssociation();
+    loadUserData();
+    fetchDashboardData();
   }
 
-  void _checkGymAssociation() {
+  void loadUserData() {
     final userData = _apiService.getUserData();
-    if (userData != null && userData['gymId'] != null) {
-      hasJoinedGym.value = true;
+    if (userData != null && userData['name'] != null) {
+      final String fullName = userData['name'].toString().trim();
+      if (fullName.isNotEmpty) {
+        userFirstName.value = fullName.split(' ').first;
+      }
+    }
+    // Check gym association
+    if (userData != null) {
+      final gymId = userData['gymId'] ?? userData['gym']?['_id'];
+      isAssociatedWithGym.value = gymId != null && gymId.toString().isNotEmpty;
+      if (userData['gym'] != null && userData['gym']['name'] != null) {
+        gymName.value = userData['gym']['name'];
+      }
     }
   }
 
-  // 1. Submit Gym Join Request API
-  Future<void> submitJoinToken() async {
-    final token = gymTokenController.text.trim();
-    if (token.isEmpty) {
-      _showSnackbar('Error', 'Please enter a valid gym join token', isError: true);
-      return;
-    }
-
-    isSubmittingJoin.value = true;
+  Future<void> fetchDashboardData() async {
+    isLoading.value = true;
     try {
-      final response = await _apiService.joinRequest(gymToken: token);
-      if (response.isOk) {
-        _showSnackbar('Request Sent', 'Your join request is pending gym owner approval.');
-        gymTokenController.clear();
+      final response = await _apiService.getMemberDashboardSummary();
+      if (response.isOk && response.body != null) {
+        final data = response.body['data'] ?? response.body;
+
+        isCheckedIn.value = data['isCheckedIn'] ?? false;
+        currentStreakDays.value = data['streakDays'] ?? 0;
+        todayTargetPart.value = data['todayTargetPart'] ?? 'Full Body';
+        currentWaterLitres.value =
+            (data['waterLitres'] as num?)?.toDouble() ?? 2.5;
+        currentWeightKg.value =
+            (data['currentWeightKg'] as num?)?.toDouble() ?? 70.0;
+
+        if (data['weeklyActivity'] != null) {
+          weeklyActivity.value = List<bool>.from(data['weeklyActivity']);
+        }
+
+        if (data['hasCompletedTodayAttendance'] != null) {
+          hasCompletedTodayAttendance.value = data['hasCompletedTodayAttendance'];
+        }
+
+        if (data['exercises'] != null) {
+          final List exList = data['exercises'];
+          todayExercises.value = exList
+              .map((e) => ExerciseModel.fromJson(e))
+              .toList();
+        } else {
+          todayExercises.value = [];
+        }
       } else {
-        final msg = response.body?['message'] ?? 'Failed to send request';
-        _showSnackbar('Error', msg, isError: true);
+        todayExercises.value = [];
       }
     } catch (e) {
-      _showSnackbar('Error', 'Connection failed: $e', isError: true);
+      debugPrint('Error fetching dashboard summary: $e');
+      todayExercises.value = [];
     } finally {
-      isSubmittingJoin.value = false;
+      isLoading.value = false;
     }
   }
 
-  // 2. Check-In / Check-Out Action
-  void toggleCheckIn() {
-    isCheckedIn.value = !isCheckedIn.value;
-    final status = isCheckedIn.value ? 'Checked In' : 'Checked Out';
-    _showSnackbar('Attendance', 'Successfully $status!');
+  Future<void> toggleCheckIn(bool status) async {
+    try {
+      final todayStr = DateTime.now().toIso8601String().split('T')[0];
+      final response = status
+          ? await _apiService.memberCheckIn(dateStr: todayStr)
+          : await _apiService.memberCheckOut();
+
+      if (response.isOk) {
+        isCheckedIn.value = status;
+        if (!status) {
+          hasCompletedTodayAttendance.value = true;
+          // Instantly update today's activity bubble to green
+          final todayIndex = (DateTime.now().weekday - 1) % 7;
+          if (todayIndex < weeklyActivity.length) {
+            weeklyActivity[todayIndex] = true;
+            weeklyActivity.refresh();
+          }
+        }
+        _showSnackbar(
+          status ? 'Checked In' : 'Checked Out',
+          status ? 'Welcome to the gym!' : 'Great workout session!',
+          isError: !status,
+        );
+      } else {
+        final message = response.body?['message'] ??
+            (status ? 'Check-in failed' : 'Check-out failed');
+        _showSnackbar('Notice', message, isError: true);
+      }
+    } catch (e) {
+      _showSnackbar('Error', 'Unable to process request', isError: true);
+    }
   }
 
-  // 3. Book Slot Action
-  void bookSlot(String slotId) {
-    selectedSlotId.value = slotId;
-    _showSnackbar('Slot Reserved', 'Your gym slot has been booked for today!');
+  void addGlassOfWater() {
+    waterGlasses.value++;
+    currentWaterLitres.value += 0.25;
+    _apiService.updateHydration(currentWaterLitres.value);
   }
+
+  void incrementSet(String exerciseId) async {
+    final index = todayExercises.indexWhere((e) => e.id == exerciseId);
+    if (index != -1) {
+      if (todayExercises[index].completedSets <
+          todayExercises[index].totalSets) {
+        todayExercises[index].completedSets++;
+        todayExercises.refresh();
+        await _apiService.updateExerciseProgress(
+          exerciseId,
+          todayExercises[index].completedSets,
+        );
+      }
+    }
+  }
+
+  Future<void> addNewExercise({
+    required String name,
+    required String muscleGroup,
+    required double weightInKg,
+    required int repsPerSet,
+    required int totalSets,
+    required int durationMinutes,
+    String notes = '',
+  }) async {
+    try {
+      final res = await _apiService.addExercise(
+        name: name,
+        muscleGroup: muscleGroup,
+        weightInKg: weightInKg,
+        repsPerSet: repsPerSet,
+        totalSets: totalSets,
+        durationMinutes: durationMinutes,
+        notes: notes,
+      );
+
+      if (res.isOk && res.body != null && res.body['data'] != null) {
+        final newExercise = ExerciseModel.fromJson(res.body['data']);
+        todayExercises.add(newExercise);
+        todayExercises.refresh();
+        _showSnackbar('Exercise Added', '$name added to your routine!');
+      } else {
+        final localEx = ExerciseModel(
+          id: 'ex_${DateTime.now().millisecondsSinceEpoch}',
+          name: name,
+          muscleGroup: muscleGroup,
+          weightInKg: weightInKg,
+          repsPerSet: repsPerSet,
+          totalSets: totalSets,
+          completedSets: 0,
+          durationMinutes: durationMinutes,
+          notes: notes,
+        );
+        todayExercises.add(localEx);
+        todayExercises.refresh();
+        _showSnackbar('Exercise Added', '$name added to your routine!');
+      }
+    } catch (e) {
+      debugPrint('Error adding exercise: $e');
+    }
+  }
+
+  Future<void> removeExercise(String exerciseId) async {
+    try {
+      todayExercises.removeWhere((e) => e.id == exerciseId);
+      todayExercises.refresh();
+      await _apiService.deleteExercise(exerciseId);
+      _showSnackbar('Removed', 'Exercise deleted from routine');
+    } catch (e) {
+      debugPrint('Error deleting exercise: $e');
+    }
+  }
+
+  Future<void> saveWorkoutSummary({
+    required String targetPart,
+    required int durationMinutes,
+    required int calories,
+  }) async {
+    try {
+      todayTargetPart.value = targetPart;
+      await _apiService.logWorkoutSummary(
+        targetPart: targetPart,
+        totalDurationMinutes: durationMinutes,
+        caloriesBurned: calories,
+      );
+      _showSnackbar('Workout Saved', 'Today\'s workout summary logged!');
+    } catch (e) {
+      debugPrint('Error saving workout summary: $e');
+    }
+  }
+
+  int get completedSetsCount =>
+      todayExercises.fold(0, (sum, item) => sum + item.completedSets);
+
+  int get totalSetsCount =>
+      todayExercises.fold(0, (sum, item) => sum + item.totalSets);
+
+  int get remainingSetsCount => totalSetsCount - completedSetsCount;
+
+  double get workoutProgressRatio =>
+      totalSetsCount == 0 ? 0.0 : completedSetsCount / totalSetsCount;
 
   void logoutMember() {
     _apiService.clearAuthData();
@@ -107,11 +261,5 @@ class MemberDashboardController extends GetxController {
       borderColor: isError ? const Color(0xFFFF3B30) : const Color(0xFF34C759),
       borderWidth: 1,
     );
-  }
-
-  @override
-  void onClose() {
-    gymTokenController.dispose();
-    super.onClose();
   }
 }

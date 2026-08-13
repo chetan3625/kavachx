@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:kavachx/Model/join_request_model.dart';
 import 'package:kavachx/Services/api_service.dart';
+import 'package:kavachx/Services/socket_service.dart';
 
 class JoinRequestsController extends GetxController {
   final ApiService _apiService = Get.find<ApiService>();
@@ -14,6 +15,39 @@ class JoinRequestsController extends GetxController {
   void onInit() {
     super.onInit();
     fetchPendingRequests();
+    _listenToSocketEvents();
+  }
+
+  void _listenToSocketEvents() {
+    try {
+      if (Get.isRegistered<SocketService>()) {
+        final socketService = Get.find<SocketService>();
+        socketService.socket.on('new_join_request', (data) {
+          if (data != null && data is Map<String, dynamic>) {
+            try {
+              final newRequest = JoinRequestModel.fromJson(data);
+              if (!requests.any((r) => r.id == newRequest.id)) {
+                requests.insert(0, newRequest);
+              }
+            } catch (_) {
+              fetchPendingRequests();
+            }
+          } else {
+            fetchPendingRequests();
+          }
+        });
+
+        socketService.socket.on('join_request_updated', (data) {
+          if (data != null && data is Map && data['id'] != null) {
+            requests.removeWhere((item) => item.id == data['id']);
+          } else {
+            fetchPendingRequests();
+          }
+        });
+      }
+    } catch (e) {
+      // Ignore socket errors
+    }
   }
 
   Future<void> fetchPendingRequests() async {

@@ -5,7 +5,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'package:kavachx/Services/api_service.dart';
 
 class GymQrDisplayView extends StatefulWidget {
-  const GymQrDisplayView({Key? key}) : super(key: key);
+  const GymQrDisplayView({super.key});
 
   @override
   State<GymQrDisplayView> createState() => _GymQrDisplayViewState();
@@ -16,6 +16,7 @@ class _GymQrDisplayViewState extends State<GymQrDisplayView> {
   final ApiService _apiService = Get.find<ApiService>();
 
   String? qrToken;
+  String? qrImageUrl;
   bool isLoading = true;
 
   @override
@@ -24,14 +25,17 @@ class _GymQrDisplayViewState extends State<GymQrDisplayView> {
     _loadGymQrToken();
   }
 
-Future<void> _loadGymQrToken() async {
+  Future<void> _loadGymQrToken() async {
     setState(() => isLoading = true);
 
     // 1. Check local storage
-    String? token = _storage.read<String>('gym_qr_token');
+    String? token = _apiService.getGymQrToken();
+    String? imgUrl = _apiService.getGymQrUrl();
+
     if (token != null && token.isNotEmpty) {
       setState(() {
         qrToken = token;
+        qrImageUrl = imgUrl;
         isLoading = false;
       });
       return;
@@ -41,14 +45,17 @@ Future<void> _loadGymQrToken() async {
     final userData = _apiService.getUserData();
     debugPrint('=== DEBUG USER DATA FROM STORAGE ===: $userData');
 
-    // Check if gymId exists under user or nested gym object
-    final String? localGymId = userData?['gymId'] ?? userData?['gym']?['_id'] ?? userData?['gym']?['id'];
+    token = userData?['gymToken'] ??
+        userData?['gym']?['gymToken'] ??
+        userData?['qr']?['token'];
+    imgUrl = userData?['qr']?['qrUrl'] ?? userData?['qrUrl'];
 
-    if (localGymId != null && localGymId.isNotEmpty) {
-      token = 'KAVACHX_GYM_$localGymId';
+    if (token != null && token.isNotEmpty) {
       _storage.write('gym_qr_token', token);
+      if (imgUrl != null) _storage.write('gym_qr_url', imgUrl);
       setState(() {
         qrToken = token;
+        qrImageUrl = imgUrl;
         isLoading = false;
       });
       return;
@@ -61,17 +68,17 @@ Future<void> _loadGymQrToken() async {
 
       if (response.isOk && response.body != null) {
         final body = response.body;
-        final data = body['data'] ?? body['user'] ?? body;
-        
-        // Check all common backend response paths for gymId
-        final String? gymId = data?['gymId'] ?? data?['gym']?['_id'] ?? data?['gym']?['id'];
+        final data = body['data'] ?? body;
 
-        if (gymId != null && gymId.isNotEmpty) {
-          token = 'KAVACHX_GYM_$gymId';
+        token = data?['qr']?['token'] ??
+            data?['gym']?['gymToken'] ??
+            data?['user']?['gymToken'];
+        imgUrl = data?['qr']?['qrUrl'] ?? data?['gym']?['qrUrl'];
+
+        if (token != null && token.isNotEmpty) {
           _storage.write('gym_qr_token', token);
-        } else if (data?['qr']?['token'] != null) {
-          token = data['qr']['token'];
-          _storage.write('gym_qr_token', token);
+          if (imgUrl != null) _storage.write('gym_qr_url', imgUrl);
+          _apiService.saveAuthPayload(data);
         }
       }
     } catch (e) {
@@ -80,22 +87,41 @@ Future<void> _loadGymQrToken() async {
 
     setState(() {
       qrToken = token;
+      qrImageUrl = imgUrl;
       isLoading = false;
     });
   }
-  // Fallback trigger if user session gymId exists
-  void _forceFallbackToken() {
-    final userData = _apiService.getUserData();
-    final String? fallbackId = userData?['id'] ?? userData?['_id'] ?? 'OFFLINE';
-    final String token = 'KAVACHX_GYM_$fallbackId';
-    _storage.write('gym_qr_token', token);
-    setState(() {
-      qrToken = token;
-    });
+
+  void _forceFallbackToken() async {
+    setState(() => isLoading = true);
+    try {
+      final response = await _apiService.getMe();
+      if (response.isOk && response.body != null) {
+        final data = response.body['data'] ?? response.body;
+        final token = data?['qr']?['token'] ?? data?['gym']?['gymToken'];
+        final imgUrl = data?['qr']?['qrUrl'] ?? data?['gym']?['qrUrl'];
+        if (token != null && token.isNotEmpty) {
+          _storage.write('gym_qr_token', token);
+          if (imgUrl != null) _storage.write('gym_qr_url', imgUrl);
+          setState(() {
+            qrToken = token;
+            qrImageUrl = imgUrl;
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('Error forcing fallback QR token: $e');
+    } finally {
+      setState(() => isLoading = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final String joinUrl = (qrToken != null && qrToken!.isNotEmpty)
+        ? (qrToken!.startsWith('http') ? qrToken! : 'https://kavachx.com/join/$qrToken')
+        : '';
+
     return Scaffold(
       backgroundColor: const Color(0xFF0F0F12),
       extendBodyBehindAppBar: true,
@@ -122,12 +148,12 @@ Future<void> _loadGymQrToken() async {
                 'asset/app_backgrounds/authscreen.jpg',
                 fit: BoxFit.cover,
                 alignment: Alignment.center,
-                color: const Color(0xFF0F0F12).withOpacity(0.85),
+                color: const Color(0xFF0F0F12).withValues(alpha: 0.85),
                 colorBlendMode: BlendMode.darken,
               ),
             ),
 
-            // 2. QR / Fallback Content
+            // 2. QR Content
             SafeArea(
               child: Center(
                 child: isLoading
@@ -136,7 +162,7 @@ Future<void> _loadGymQrToken() async {
                         margin: const EdgeInsets.symmetric(horizontal: 24),
                         padding: const EdgeInsets.all(24),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF1C1C22).withOpacity(0.90),
+                          color: const Color(0xFF1C1C22).withValues(alpha: 0.90),
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(color: const Color(0xFFFF3B30)),
                         ),
@@ -154,19 +180,45 @@ Future<void> _loadGymQrToken() async {
                             const SizedBox(height: 16),
 
                             if (qrToken != null && qrToken!.isNotEmpty) ...[
-                              QrImageView(
-                                data: qrToken!,
-                                version: QrVersions.auto,
-                                size: 220.0,
-                                eyeStyle: const QrEyeStyle(
-                                  eyeShape: QrEyeShape.square,
-                                  color: Color(0xFFFF3B30),
+                              if (qrImageUrl != null && qrImageUrl!.isNotEmpty)
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: Image.network(
+                                    qrImageUrl!,
+                                    width: 220,
+                                    height: 220,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return QrImageView(
+                                        data: joinUrl,
+                                        version: QrVersions.auto,
+                                        size: 220.0,
+                                        eyeStyle: const QrEyeStyle(
+                                          eyeShape: QrEyeShape.square,
+                                          color: Color(0xFFFF3B30),
+                                        ),
+                                        dataModuleStyle: const QrDataModuleStyle(
+                                          dataModuleShape: QrDataModuleShape.square,
+                                          color: Colors.white,
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                )
+                              else
+                                QrImageView(
+                                  data: joinUrl,
+                                  version: QrVersions.auto,
+                                  size: 220.0,
+                                  eyeStyle: const QrEyeStyle(
+                                    eyeShape: QrEyeShape.square,
+                                    color: Color(0xFFFF3B30),
+                                  ),
+                                  dataModuleStyle: const QrDataModuleStyle(
+                                    dataModuleShape: QrDataModuleShape.square,
+                                    color: Colors.white,
+                                  ),
                                 ),
-                                dataModuleStyle: const QrDataModuleStyle(
-                                  dataModuleShape: QrDataModuleShape.square,
-                                  color: Colors.white,
-                                ),
-                              ),
                               const SizedBox(height: 16),
                               SelectableText(
                                 'Token: $qrToken',

@@ -3,7 +3,7 @@ import 'package:kavachx/Controller/splash_controller.dart';
 import 'package:get/get.dart';
 
 class SplashView extends GetView<SplashController> {
-  const SplashView({Key? key}) : super(key: key);
+  const SplashView({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -16,7 +16,7 @@ class SplashView extends GetView<SplashController> {
             child: Image.asset(
               'asset/app_backgrounds/splas_background.jpg',
               fit: BoxFit.cover,
-              color: const Color(0xFF1C1C22).withOpacity(0.6),
+              color: const Color(0xFF1C1C22).withValues(alpha: 0.6),
               colorBlendMode: BlendMode.darken,
             )),
           
@@ -33,7 +33,7 @@ class SplashView extends GetView<SplashController> {
                     color: const Color(0xFF1E1E24),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFFFF3B30).withOpacity(0.3),
+                        color: const Color(0xFFFF3B30).withValues(alpha: 0.3),
                         blurRadius: 25,
                         spreadRadius: 2,
                       ),

@@ -1,36 +1,58 @@
 import express from "express";
-
 import {
   joinRequest,
   listPendingRequests,
   approveRequest,
-  rejectRequest
+  rejectRequest,
+  getGymMembers,
+  getInactiveMembers,
 } from "../controllers/gyms/gym.controller.js";
-
+import {
+  getPlans,
+  createPlan,
+  updatePlan,
+  deletePlan,
+} from "../controllers/gyms/plan.controller.js";
+import { sendGymAnnouncement } from "../controllers/gyms/notification.controller.js";
 import { protect, authorize } from "../middleware/auth.middleware.js";
 
 const router = express.Router();
 
-// POST /api/v1/gyms/join-request
+// Membership Plans Endpoints
+router.get("/plans", protect, authorize("gym_owner"), getPlans);
+router.post("/plans", protect, authorize("gym_owner"), createPlan);
+router.put("/plans/:id", protect, authorize("gym_owner"), updatePlan);
+router.delete("/plans/:id", protect, authorize("gym_owner"), deletePlan);
+
+// Members & Join Requests
 router.post("/join-request", protect, authorize("gym_member"), joinRequest);
-
-// GET /api/v1/gyms/join-requests
-router.get("/join-requests", protect, authorize("gym_owner"), listPendingRequests);
-
-// PATCH /api/v1/gyms/join-requests/:requestId/approve
+router.get(
+  "/join-requests",
+  protect,
+  authorize("gym_owner"),
+  listPendingRequests,
+);
 router.patch(
   "/join-requests/:requestId/approve",
   protect,
   authorize("gym_owner"),
-  approveRequest
+  approveRequest,
 );
-
-// PATCH /api/v1/gyms/join-requests/:requestId/reject
 router.patch(
   "/join-requests/:requestId/reject",
   protect,
   authorize("gym_owner"),
-  rejectRequest
+  rejectRequest,
 );
+router.get("/members", protect, authorize("gym_owner"), getGymMembers);
+router.get(
+  "/inactive-members",
+  protect,
+  authorize("gym_owner"),
+  getInactiveMembers,
+);
+
+// Broadcast Notifications
+router.post("/announce", protect, authorize("gym_owner"), sendGymAnnouncement);
 
 export default router;

@@ -65,7 +65,6 @@ class TokenRefreshService {
   static Future<void> initBackgroundRefresh() async {
     await Workmanager().initialize(
       callbackDispatcher,
-      isInDebugMode: false,
     );
 
     // Register periodic background task (Runs every 15 minutes)

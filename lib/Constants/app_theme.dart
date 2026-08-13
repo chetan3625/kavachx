@@ -37,12 +37,10 @@ class AppTheme {
         primary: primary,
         secondary: accent,
         surface: surface,
-        background: background,
         error: error,
         onPrimary: Colors.white,
         onSecondary: Colors.black,
         onSurface: textPrimary,
-        onBackground: textPrimary,
         onError: Colors.white,
       ),
 

@@ -6,7 +6,7 @@ import 'package:kavachx/Controller/auth_controller.dart';
 class AuthView extends StatelessWidget {
   final UserRole role;
 
-  const AuthView({Key? key, required this.role}) : super(key: key);
+  const AuthView({super.key, required this.role});
 
   @override
   Widget build(BuildContext context) {
@@ -41,7 +41,7 @@ class AuthView extends StatelessWidget {
                 'asset/app_backgrounds/authscreen.jpg',
                 fit: BoxFit.cover,
                 alignment: Alignment.center,
-                color: const Color(0xFF0F0F12).withOpacity(0.80),
+                color: const Color(0xFF0F0F12).withValues(alpha: 0.80),
                 colorBlendMode: BlendMode.darken,
               ),
             ),
@@ -59,7 +59,7 @@ class AuthView extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFFF3B30).withOpacity(0.15),
+                        color: const Color(0xFFFF3B30).withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(color: const Color(0xFFFF3B30), width: 1),
                       ),
@@ -95,7 +95,7 @@ class AuthView extends StatelessWidget {
                     Obx(() => Container(
                           padding: const EdgeInsets.all(4),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF1C1C22).withOpacity(0.85),
+                            color: const Color(0xFF1C1C22).withValues(alpha: 0.85),
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(color: const Color(0xFF2A2A34), width: 1),
                           ),

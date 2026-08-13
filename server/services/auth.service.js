@@ -365,4 +365,4 @@ export const changePasswordService = async (userId, oldPassword, newPassword) =>
 
   user.password = newPassword;
   await user.save();
-};
+};

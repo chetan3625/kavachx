@@ -14,13 +14,32 @@ class MemberActivityModel {
     required this.daysAbsent,
     required this.lastActiveDate,
   });
+
+  factory MemberActivityModel.fromJson(Map<String, dynamic> json) {
+    final userData = json['user'] ?? {};
+    return MemberActivityModel(
+      user: UserModel(
+        id: userData['id'] ?? userData['_id'] ?? '',
+        name: userData['name'] ?? 'Member',
+        email: userData['email'] ?? '',
+        phone: userData['phone'] ?? '',
+        role: userData['role'] ?? 'gym_member',
+      ),
+      daysAbsent: json['daysAbsent'] ?? 0,
+      lastActiveDate: json['lastActiveDate'] != null
+          ? DateTime.tryParse(json['lastActiveDate'].toString()) ??
+                DateTime.now()
+          : DateTime.now(),
+    );
+  }
 }
 
 class InactiveMembersController extends GetxController {
   final ApiService _apiService = Get.find<ApiService>();
 
   final RxList<MemberActivityModel> allMembers = <MemberActivityModel>[].obs;
-  final RxList<MemberActivityModel> filteredMembers = <MemberActivityModel>[].obs;
+  final RxList<MemberActivityModel> filteredMembers =
+      <MemberActivityModel>[].obs;
   final RxBool isLoading = false.obs;
 
   // Selected filter in days (e.g., 3, 7, 15, 30)
@@ -35,65 +54,53 @@ class InactiveMembersController extends GetxController {
   Future<void> fetchMembersAndActivity() async {
     isLoading.value = true;
     try {
-      // Endpoint integration placeholder: Replace with your actual members API call
-      // e.g. final response = await _apiService.getMembers();
-      
-      // Mock data representing members with last activity dates for testing UI
-      await Future.delayed(const Duration(milliseconds: 600));
-      final List<MemberActivityModel> mockList = [
-        MemberActivityModel(
-          user: UserModel(
-            id: '1',
-            name: 'Rahul Patil',
-            email: 'rahul@gmail.com',
-            phone: '9876543210',
-            role: 'gym_member',
-          ),
-          daysAbsent: 5,
-          lastActiveDate: DateTime.now().subtract(const Duration(days: 5)),
-        ),
-        MemberActivityModel(
-          user: UserModel(
-            id: '2',
-            name: 'Amit Shinde',
-            email: 'amit@gmail.com',
-            phone: '9812345678',
-            role: 'gym_member',
-          ),
-          daysAbsent: 12,
-          lastActiveDate: DateTime.now().subtract(const Duration(days: 12)),
-        ),
-        MemberActivityModel(
-          user: UserModel(
-            id: '3',
-            name: 'Suresh Deshmukh',
-            email: 'suresh@gmail.com',
-            phone: '9765432109',
-            role: 'gym_member',
-          ),
-          daysAbsent: 2,
-          lastActiveDate: DateTime.now().subtract(const Duration(days: 2)),
-        ),
-      ];
+      final response = await _apiService.getInactiveMembers(
+        days: selectedDaysFilter.value,
+      );
 
-      allMembers.value = mockList;
-      applyDaysFilter(selectedDaysFilter.value);
+      // Ensure body is a Map before indexing keys to prevent String crash
+      if (response.isOk &&
+          response.body is Map &&
+          response.body['success'] == true) {
+        final List<dynamic> rawList = response.body['data'] ?? [];
+        final fetched = rawList
+            .map((item) => MemberActivityModel.fromJson(item))
+            .toList();
+
+        allMembers.value = fetched;
+        filteredMembers.value = fetched;
+      } else {
+        String errorMsg = 'Failed to fetch inactive members';
+        if (response.body is Map && response.body['message'] != null) {
+          errorMsg = response.body['message'];
+        } else if (response.statusCode == 404) {
+          errorMsg = 'Endpoint not found. Please restart backend server.';
+        }
+
+        _showSnackbar('Notice', errorMsg, isError: true);
+      }
     } catch (e) {
       debugPrint('Error fetching member activity: $e');
+      _showSnackbar('Error', 'Connection failed: $e', isError: true);
     } finally {
       isLoading.value = false;
     }
   }
-
   void applyDaysFilter(int days) {
     selectedDaysFilter.value = days;
-    filteredMembers.value = allMembers
-        .where((member) => member.daysAbsent >= days)
-        .toList();
+    fetchMembersAndActivity(); // Re-fetch calculated records for selected threshold
   }
 
   // Action 1: Direct Phone Call
   Future<void> makePhoneCall(String phoneNumber) async {
+    if (phoneNumber.trim().isEmpty) {
+      _showSnackbar(
+        'Error',
+        'Phone number not available for this member',
+        isError: true,
+      );
+      return;
+    }
     final Uri url = Uri.parse('tel:$phoneNumber');
     if (await canLaunchUrl(url)) {
       await launchUrl(url);
@@ -104,6 +111,14 @@ class InactiveMembersController extends GetxController {
 
   // Action 2: Direct SMS
   Future<void> sendSMS(String phoneNumber) async {
+    if (phoneNumber.trim().isEmpty) {
+      _showSnackbar(
+        'Error',
+        'Phone number not available for this member',
+        isError: true,
+      );
+      return;
+    }
     final String message = Uri.encodeComponent(
       'Hey! We missed you at KavachX Gym. Your workout session is waiting for you today!',
     );
@@ -117,6 +132,15 @@ class InactiveMembersController extends GetxController {
 
   // Action 3: WhatsApp Trigger
   Future<void> triggerWhatsApp(String phoneNumber, String name) async {
+    if (phoneNumber.trim().isEmpty) {
+      _showSnackbar(
+        'Error',
+        'Phone number not available for this member',
+        isError: true,
+      );
+      return;
+    }
+
     // Format phone number to international format without spaces/plus
     String formattedPhone = phoneNumber.replaceAll(RegExp(r'\D'), '');
     if (!formattedPhone.startsWith('91') && formattedPhone.length == 10) {
@@ -127,12 +151,18 @@ class InactiveMembersController extends GetxController {
       'Hi $name! We noticed you haven\'t visited KavachX Gym in the last ${selectedDaysFilter.value} days. Is everything okay? Let us know when you plan to resume your fitness routine!',
     );
 
-    final Uri whatsappUri = Uri.parse('https://wa.me/$formattedPhone?text=$message');
+    final Uri whatsappUri = Uri.parse(
+      'https://wa.me/$formattedPhone?text=$message',
+    );
 
     if (await canLaunchUrl(whatsappUri)) {
       await launchUrl(whatsappUri, mode: LaunchMode.externalApplication);
     } else {
-      _showSnackbar('Error', 'WhatsApp application not found on device', isError: true);
+      _showSnackbar(
+        'Error',
+        'WhatsApp application not found on device',
+        isError: true,
+      );
     }
   }
 

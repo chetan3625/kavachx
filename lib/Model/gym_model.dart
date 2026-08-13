@@ -16,7 +16,7 @@ class GymModel {
       id: gymJson['id'] ?? gymJson['_id'] ?? '',
       name: gymJson['name'] ?? '',
       qrToken: qrJson?['token'],
-      qrUrl: qrJson?['joinUrl'] ?? qrJson?['qr_code'],
+      qrUrl: qrJson?['joinUrl'] ?? qrJson?['qr_url'],
     );
   }
 }

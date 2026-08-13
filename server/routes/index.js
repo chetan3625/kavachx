@@ -16,4 +16,6 @@ router.use("/gyms", gymRoutes);
 router.use("/attendance", attendanceRoutes);
 router.use("/exercises", exerciseRoutes);
 
+router.use("/members", memberRoutes);
+
 export default router;

@@ -17,10 +17,17 @@ class JoinRequestModel {
   });
 
   factory JoinRequestModel.fromJson(Map<String, dynamic> json) {
+    final gymData = json['gymId'];
+    final String gId = gymData is Map
+        ? (gymData['_id'] ?? gymData['id'] ?? '')
+        : (gymData?.toString() ?? '');
+
+    final userData = json['user'] ?? json['userId'] ?? json['memberId'] ?? {};
+
     return JoinRequestModel(
-      id: json['_id'] ?? json['id'],
-      gymId: json['gymId'] ?? '',
-      user: UserModel.fromJson(json['user'] ?? json['userId'] ?? {}),
+      id: json['_id'] ?? json['id'] ?? '',
+      gymId: gId,
+      user: UserModel.fromJson(userData is Map<String, dynamic> ? userData : Map<String, dynamic>.from(userData)),
       status: json['status'] ?? 'pending',
       createdAt: json['createdAt'] != null
           ? DateTime.parse(json['createdAt'])

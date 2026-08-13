@@ -4,7 +4,7 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:kavachx/Services/api_service.dart';
 
 class QrScannerView extends StatefulWidget {
-  const QrScannerView({Key? key}) : super(key: key);
+  const QrScannerView({super.key});
 
   @override
   State<QrScannerView> createState() => _QrScannerViewState();

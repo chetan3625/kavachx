@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:get_storage/get_storage.dart';
 import 'package:kavachx/Constants/user_role.dart';
 import 'package:kavachx/Model/usr_model.dart';
 import 'package:kavachx/Services/api_service.dart';
+import 'package:kavachx/Services/socket_service.dart';
 
 class AuthController extends GetxController {
   final UserRole role;
@@ -97,6 +97,9 @@ class AuthController extends GetxController {
 
           // Save accessToken, refreshToken, user, and qr details centrally
           _apiService.saveAuthPayload(data);
+          if (Get.isRegistered<SocketService>()) {
+            Get.find<SocketService>().joinUserRoom();
+          }
           
           // Update current user state
           currentUser.value = UserModel.fromJson(userData);
@@ -106,11 +109,15 @@ class AuthController extends GetxController {
             isRegister ? 'Registered successfully!' : 'Logged in successfully!',
           );
 
-          // Route to appropriate dashboard
+          // Route based on onboarding status
           if (currentUser.value?.role == 'gym_owner') {
             Get.offAllNamed('/owner-dashboard');
           } else {
-            Get.offAllNamed('/member-dashboard');
+            if (currentUser.value?.isOnboarded == true) {
+              Get.offAllNamed('/member-dashboard');
+            } else {
+              Get.offAllNamed('/member-onboarding');
+            }
           }
         } else {
           _showSnackbar('Error', 'Invalid token or user data received', isError: true);
@@ -121,6 +128,7 @@ class AuthController extends GetxController {
       }
     } catch (e) {
       isLoading.value = false;
+      debugPrint('[AUTH EXCEPTION] Error: $e');
       _showSnackbar('Error', 'Something went wrong. Check connection.', isError: true);
     }
   }

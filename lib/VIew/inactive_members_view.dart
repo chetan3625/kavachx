@@ -3,7 +3,7 @@ import 'package:get/get.dart';
 import 'package:kavachx/Controller/inactive_members_controller.dart';
 
 class InactiveMembersView extends StatelessWidget {
-  const InactiveMembersView({Key? key}) : super(key: key);
+  const InactiveMembersView({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -32,25 +32,28 @@ class InactiveMembersView extends StatelessWidget {
           const SizedBox(height: 16),
 
           // Days Filter Chips (3, 7, 15, 30 Days)
-          Obx(() => Row(
-                children: [3, 7, 15, 30].map((days) {
-                  final isSelected = controller.selectedDaysFilter.value == days;
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 8.0),
-                    child: ChoiceChip(
-                      label: Text('Absent $days+ Days'),
-                      selected: isSelected,
-                      selectedColor: const Color(0xFFFF3B30),
-                      backgroundColor: const Color(0xFF1C1C22),
-                      labelStyle: TextStyle(
-                        color: isSelected ? Colors.white : const Color(0xFFA1A1AA),
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
+          Obx(() => SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [3, 7, 15, 30].map((days) {
+                    final isSelected = controller.selectedDaysFilter.value == days;
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8.0),
+                      child: ChoiceChip(
+                        label: Text('Absent $days+ Days'),
+                        selected: isSelected,
+                        selectedColor: const Color(0xFFFF3B30),
+                        backgroundColor: const Color(0xFF1C1C22),
+                        labelStyle: TextStyle(
+                          color: isSelected ? Colors.white : const Color(0xFFA1A1AA),
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
+                        onSelected: (_) => controller.applyDaysFilter(days),
                       ),
-                      onSelected: (_) => controller.applyDaysFilter(days),
-                    ),
-                  );
-                }).toList(),
+                    );
+                  }).toList(),
+                ),
               )),
 
           const SizedBox(height: 16),
@@ -90,21 +93,21 @@ class InactiveMembersView extends StatelessWidget {
 
               return ListView.separated(
                 itemCount: controller.filteredMembers.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 12),
+                separatorBuilder: (_, _) => const SizedBox(height: 12),
                 itemBuilder: (context, index) {
                   final item = controller.filteredMembers[index];
 
                   return Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF1C1C22).withOpacity(0.85),
+                      color: const Color(0xFF1C1C22).withValues(alpha: 0.85),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(color: const Color(0xFF2A2A34)),
                     ),
                     child: Row(
                       children: [
                         CircleAvatar(
-                          backgroundColor: const Color(0xFFFF3B30).withOpacity(0.15),
+                          backgroundColor: const Color(0xFFFF3B30).withValues(alpha: 0.15),
                           child: Text(
                             item.user.name[0].toUpperCase(),
                             style: const TextStyle(

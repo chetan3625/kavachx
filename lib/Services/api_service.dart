@@ -5,7 +5,9 @@ import 'package:get_storage/get_storage.dart';
 class ApiService extends GetConnect {
   static ApiService get to => Get.find();
 
-  static const String baseUrlString = 'http://10.0.2.2:5000/api/v1';
+  // For Real Physical Phone (Wi-Fi), use your PC IP address: http://10.77.95.199:5000/api/v1
+  // For Android Emulator, use http://10.0.2.2:5000/api/v1
+  static const String baseUrlString = 'https://kavachx-xc1c.onrender.com/api/v1';
 
   // Storage Key Constants
   static const String _tokenKey = 'access_token';
@@ -20,6 +22,23 @@ class ApiService extends GetConnect {
   void onInit() {
     httpClient.baseUrl = baseUrlString;
     httpClient.timeout = const Duration(seconds: 15);
+    // Fallback if 10.77.95.199 fails on emulator
+    httpClient.addAuthenticator<dynamic>((request) async {
+      return request;
+    });
+
+    httpClient.addResponseModifier((request, response) {
+      if (response.status.hasError && response.status.connectionError) {
+        if (httpClient.baseUrl?.contains('10.77.95.199') ?? false) {
+          httpClient.baseUrl = 'http://10.0.2.2:5000/api/v1';
+          debugPrint('[API FALLBACK] Switched baseUrl to http://10.0.2.2:5000/api/v1');
+        } else if (httpClient.baseUrl?.contains('10.0.2.2') ?? false) {
+          httpClient.baseUrl = 'http://10.77.95.199:5000/api/v1';
+          debugPrint('[API FALLBACK] Switched baseUrl to http://10.77.95.199:5000/api/v1');
+        }
+      }
+      return response;
+    });
 
     // Request Interceptor: Automatically attach Bearer token
     httpClient.addRequestModifier<dynamic>((request) {
@@ -86,9 +105,15 @@ class ApiService extends GetConnect {
       if (qrData['token'] != null) {
         _storage.write(_qrTokenKey, qrData['token']);
       }
-      if (qrData['joinUrl'] != null) {
+      if (qrData['qrUrl'] != null) {
+        _storage.write(_qrUrlKey, qrData['qrUrl']);
+      } else if (qrData['joinUrl'] != null) {
         _storage.write(_qrUrlKey, qrData['joinUrl']);
       }
+    }
+    final Map<String, dynamic>? gymData = dataMap['gym'];
+    if (gymData != null && gymData['gymToken'] != null) {
+      _storage.write(_qrTokenKey, gymData['gymToken']);
     }
   }
 
@@ -96,6 +121,8 @@ class ApiService extends GetConnect {
   String? getToken() => _storage.read<String>(_tokenKey);
   String? getRefreshToken() => _storage.read<String>(_refreshTokenKey);
   Map<String, dynamic>? getUserData() => _storage.read<Map<String, dynamic>>(_userKey);
+  String? getGymQrToken() => _storage.read<String>(_qrTokenKey);
+  String? getGymQrUrl() => _storage.read<String>(_qrUrlKey);
 
   bool isLoggedIn() {
     final token = getToken();
@@ -210,8 +237,190 @@ class ApiService extends GetConnect {
       'features': features,
     });
   }
+  // ================= MEMBERSHIP PLAN ENDPOINTS =================
+
+
+
+  Future<Response> getPlanById(String planId) {
+    return get('/gyms/plans/$planId');
+  }
+
+  
+  Future<Response> updateMembershipPlan({
+    required String planId,
+    required String name,
+    required double price,
+    required int durationInMonths,
+    required List<String> features,
+  }) {
+    return put('/gyms/plans/$planId', {
+      'name': name,
+      'price': price,
+      'durationInMonths': durationInMonths,
+      'features': features,
+    });
+  }
 
   Future<Response> deleteMembershipPlan(String planId) {
     return delete('/gyms/plans/$planId');
+  }
+  // ================= MEMBER DASHBOARD ENDPOINTS =================
+
+  Future<Response> getMemberDashboardSummary() {
+    return get('/members/dashboard/summary');
+  }
+
+  Future<Response> memberCheckIn({String? dateStr}) {
+    final todayStr = dateStr ?? DateTime.now().toIso8601String().split('T')[0];
+    return post('/members/check-in', {'dateStr': todayStr});
+  }
+
+  Future<Response> memberCheckOut() {
+    return post('/members/check-out', {});
+  }
+
+  Future<Response> updateHydration(double litres) {
+    return patch('/members/hydration', {'waterLitres': litres});
+  }
+
+  Future<Response> updateExerciseProgress(
+    String exerciseId,
+    int completedSets,
+  ) {
+    return patch('/members/exercises/$exerciseId/progress', {
+      'completedSets': completedSets,
+    });
+  }
+
+  Future<Response> addExercise({
+    required String name,
+    required String muscleGroup,
+    required double weightInKg,
+    required int repsPerSet,
+    required int totalSets,
+    required int durationMinutes,
+    String notes = '',
+  }) {
+    return post('/members/exercises', {
+      'name': name,
+      'muscleGroup': muscleGroup,
+      'weightInKg': weightInKg,
+      'repsPerSet': repsPerSet,
+      'totalSets': totalSets,
+      'durationMinutes': durationMinutes,
+      'notes': notes,
+    });
+  }
+  // Fetch inactive members for owner
+  Future<Response> getInactiveMembers({int days = 3}) {
+    return get('/gyms/inactive-members', query: {'days': '$days'});
+  }
+
+  Future<Response> deleteExercise(String exerciseId) {
+    return delete('/members/exercises/$exerciseId');
+  }
+  // Broadcast notification to all gym members (Owner only)
+  Future<Response> sendAnnouncement({
+    required String title,
+    required String message,
+    String type = 'announcement',
+  }) {
+    return post('/gyms/announce', {
+      'title': title,
+      'message': message,
+      'type': type,
+    });
+  }
+
+  Future<Response> logWorkoutSummary({
+    required String targetPart,
+    required int totalDurationMinutes,
+    required int caloriesBurned,
+  }) {
+    return post('/members/workout-summary', {
+      'targetPart': targetPart,
+      'totalDurationMinutes': totalDurationMinutes,
+      'caloriesBurned': caloriesBurned,
+    });
+  }
+  // ================= MEMBER SUBSCRIPTION ENDPOINTS =================
+
+  Future<Response> getMemberCurrentPlan() {
+    return get('/members/subscription/current');
+  }
+
+  Future<Response> getAvailableGymPlans() {
+    return get('/members/plans');
+  }
+
+  Future<Response> subscribeToPlan({
+    required String planId,
+    required String paymentMethod,
+    required double amount,
+  }) {
+    return post('/members/subscription/subscribe', {
+      'planId': planId,
+      'paymentMethod': paymentMethod,
+      'amount': amount,
+    });
+  }
+
+  // ================= MEMBER PROFILE ENDPOINTS =================
+
+  Future<Response> getMemberProfile() {
+    return get('/members/profile');
+  }
+
+  Future<Response> updateMemberProfile(Map<String, dynamic> data) {
+    return put('/members/profile', data);
+  }
+
+  Future<Response> uploadProfileImage(String filePath) {
+    final form = FormData({
+      'profileImage': MultipartFile(filePath, filename: 'profile.jpg'),
+    });
+    return put('/members/profile/image', form);
+  }
+
+  // ================= ATTENDANCE HISTORY ENDPOINTS =================
+
+  Future<Response> getAttendanceHistory({int page = 1, int limit = 20}) {
+    return get('/members/attendance/history?page=$page&limit=$limit');
+  }
+
+  Future<Response> getAttendanceStats() {
+    return get('/members/attendance/stats');
+  }
+
+  // ================= NOTIFICATION ENDPOINTS =================
+
+  Future<Response> getNotifications({int page = 1, int limit = 20}) {
+    return get('/members/notifications?page=$page&limit=$limit');
+  }
+
+  Future<Response> markNotificationRead(String id) {
+    return patch('/members/notifications/$id/read', {});
+  }
+
+  Future<Response> markAllNotificationsRead() {
+    return patch('/members/notifications/read-all', {});
+  }
+
+  // ================= GYM DETAILS ENDPOINT =================
+
+  Future<Response> getMemberGymDetails() {
+    return get('/members/gym');
+  }
+
+  // ================= ONBOARDING ENDPOINTS =================
+
+  Future<Response> completeOnboarding(Map<String, dynamic> data) {
+    return post('/members/onboarding', data);
+  }
+
+  // ================= FCM TOKEN ENDPOINT =================
+
+  Future<Response> updateFcmToken(String token) {
+    return put('/members/fcm-token', {'fcmToken': token});
   }
 }

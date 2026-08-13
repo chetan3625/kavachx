@@ -43,7 +43,8 @@ export const register = asyncHandler(async (req, res) => {
         email: user.email,
         phone: user.phone,
         role: user.role,
-        gymId: user.gymId || null
+        gymId: user.gymId || null,
+        isOnboarded: user.isOnboarded || false
       },
 
       accessToken,
@@ -93,7 +94,8 @@ export const registerOwnerController = asyncHandler(async (req, res) => {
         email: user.email,
         phone: user.phone,
         role: user.role,
-        gymId: user.gymId
+        gymId: user.gymId,
+        isOnboarded: user.isOnboarded || false
       },
 
       gym: {
@@ -144,7 +146,8 @@ export const registerMemberController = asyncHandler(async (req, res) => {
         email: user.email,
         phone: user.phone,
         role: user.role,
-        gymId: user.gymId || null
+        gymId: user.gymId || null,
+        isOnboarded: user.isOnboarded || false
       },
 
       accessToken,
@@ -162,6 +165,7 @@ export const login = asyncHandler(async (req, res) => {
 
   const {
     user,
+    gym,
     accessToken,
     refreshToken
   } = await loginUser({
@@ -180,8 +184,22 @@ export const login = asyncHandler(async (req, res) => {
         email: user.email,
         phone: user.phone,
         role: user.role,
-        gymId: user.gymId || null
+        gymId: user.gymId || (gym ? gym._id : null),
+        isOnboarded: user.isOnboarded || false
       },
+
+      ...(gym && {
+        gym: {
+          id: gym._id,
+          name: gym.name,
+          gymToken: gym.gymToken
+        },
+        qr: {
+          token: gym.gymToken,
+          joinUrl: `https://kavachx.com/join/${gym.gymToken}`,
+          qrUrl: gym.qrUrl || null
+        }
+      }),
 
       accessToken,
       refreshToken
@@ -220,13 +238,34 @@ export const logout = asyncHandler(async (req, res) => {
 
 
 export const me = asyncHandler(async (req, res) => {
-  const user = await getCurrentUser(req.user.userId);
+  const { user, gym } = await getCurrentUser(req.user.userId);
 
   res.status(200).json({
     success: true,
 
     data: {
-      user
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+        gymId: user.gymId || (gym ? gym._id : null),
+        isOnboarded: user.isOnboarded || false
+      },
+
+      ...(gym && {
+        gym: {
+          id: gym._id,
+          name: gym.name,
+          gymToken: gym.gymToken
+        },
+        qr: {
+          token: gym.gymToken,
+          joinUrl: `https://kavachx.com/join/${gym.gymToken}`,
+          qrUrl: gym.qrUrl || null
+        }
+      })
     }
   });
 });

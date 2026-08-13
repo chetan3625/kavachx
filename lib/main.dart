@@ -8,19 +8,48 @@ import 'package:kavachx/VIew/splash.dart';
 import 'package:kavachx/VIew/role_selection_screen.dart';
 import 'package:kavachx/VIew/owner_dashboard_main_view.dart';
 import 'package:kavachx/VIew/member_dashboard_view.dart';
+import 'package:kavachx/Services/socket_service.dart';
 import 'bindings/splashbinding.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:kavachx/Services/firebase_messaging_service.dart';
+import 'package:kavachx/VIew/member_onboarding_view.dart';
+import 'package:kavachx/VIew/owner_onboarding_view.dart';
+
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp();
+  debugPrint('[FCM] Background message: ${message.messageId}');
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await GetStorage.init();
 
+  // Initialize Firebase
+  try {
+    await Firebase.initializeApp();
+    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+  } catch (e) {
+    debugPrint('[Firebase] Init error: $e');
+  }
+
   Get.put(ApiService(), permanent: true);
-await TokenRefreshService.initBackgroundRefresh();
+  Get.put(SocketService(), permanent: true);
+  await TokenRefreshService.initBackgroundRefresh();
+
+  // Initialize FCM
+  try {
+    await Get.putAsync(() => FirebaseMessagingService().init(), permanent: true);
+  } catch (e) {
+    debugPrint('[FCM] Service init error: $e');
+  }
+
   runApp(const KavachXApp());
 }
 
 class KavachXApp extends StatelessWidget {
-  const KavachXApp({Key? key}) : super(key: key);
+  const KavachXApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -42,11 +71,19 @@ class KavachXApp extends StatelessWidget {
         ),
         GetPage(
           name: '/owner-dashboard',
-          page: () => const OwnerDashboardView(),
+          page: () => const OwnerDashboardMainView(),
         ),
         GetPage(
           name: '/member-dashboard',
           page: () => const MemberDashboardView(),
+        ),
+        GetPage(
+          name: '/member-onboarding',
+          page: () => const MemberOnboardingView(),
+        ),
+        GetPage(
+          name: '/owner-onboarding',
+          page: () => const OwnerMembersView(),
         ),
       ],
     );

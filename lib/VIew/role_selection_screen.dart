@@ -4,7 +4,7 @@ import 'package:kavachx/Constants/user_role.dart';
 import 'package:kavachx/VIew/auth_view.dart';
 
 class RoleSelectionView extends StatelessWidget {
-  const RoleSelectionView({Key? key}) : super(key: key);
+  const RoleSelectionView({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -17,7 +17,7 @@ class RoleSelectionView extends StatelessWidget {
             child: Image.asset(
               'asset/app_backgrounds/role_selection.jpg',
               fit: BoxFit.cover,
-              color: const Color(0xFF0F0F12).withOpacity(0.75),
+              color: const Color(0xFF0F0F12).withValues(alpha: 0.75),
               colorBlendMode: BlendMode.darken,
             ),
           ),
@@ -114,7 +114,7 @@ class _RoleCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: const Color(0xFF1C1C22).withOpacity(0.85),
+          color: const Color(0xFF1C1C22).withValues(alpha: 0.85),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: const Color(0xFF2A2A34), width: 1.5),
         ),
@@ -123,7 +123,7 @@ class _RoleCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: const Color(0xFFFF3B30).withOpacity(0.15),
+                color: const Color(0xFFFF3B30).withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(

@@ -5,6 +5,7 @@ class UserModel {
   final String phone;
   final String role; // 'gym_owner' or 'gym_member'
   final String? gymId;
+  final bool isOnboarded;
 
   UserModel({
     this.id,
@@ -13,6 +14,7 @@ class UserModel {
     required this.phone,
     required this.role,
     this.gymId,
+    this.isOnboarded = false,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
@@ -23,6 +25,7 @@ class UserModel {
       phone: json['phone'] ?? '',
       role: json['role'] ?? '',
       gymId: json['gymId'] ?? json['gym']?['_id'],
+      isOnboarded: json['isOnboarded'] ?? false,
     );
   }
 
@@ -35,6 +38,7 @@ class UserModel {
       'phone': phone,
       'role': role,
       if (gymId != null) 'gymId': gymId,
+      'isOnboarded': isOnboarded,
     };
   }
 }
