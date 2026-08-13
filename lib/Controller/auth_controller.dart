@@ -139,9 +139,12 @@ class AuthController extends GetxController {
             isRegister ? 'Registered successfully!' : 'Logged in successfully!',
           );
 
-          // Route based on onboarding status
+          // New member registrations complete preferences first; returning
+          // member logins should land directly on the dashboard.
           if (currentUser.value?.role == 'gym_owner') {
             Get.offAllNamed('/owner-dashboard');
+          } else if (!isRegister) {
+            Get.offAllNamed('/member-dashboard');
           } else {
             if (currentUser.value?.isOnboarded == true) {
               Get.offAllNamed('/member-dashboard');
