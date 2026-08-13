@@ -21,6 +21,22 @@ export const getPlans = async (req, res, next) => {
   }
 };
 
+export const getPlan = async (req, res, next) => {
+  try {
+    const gym = await Gym.findOne({ ownerId: req.user.userId, isActive: true });
+    if (!gym) {
+      return res.status(404).json({ success: false, message: "Active gym not found" });
+    }
+    const plan = await MembershipPlan.findOne({ _id: req.params.id, gymId: gym._id });
+    if (!plan) {
+      return res.status(404).json({ success: false, message: "Plan not found" });
+    }
+    return res.status(200).json({ success: true, data: plan });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const createPlan = async (req, res, next) => {
   try {
     const ownerId = req.user.userId;
@@ -50,9 +66,13 @@ export const updatePlan = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { name, price, durationInMonths, features } = req.body;
+    const gym = await Gym.findOne({ ownerId: req.user.userId, isActive: true });
+    if (!gym) {
+      return res.status(404).json({ success: false, message: "Active gym not found" });
+    }
 
-    const plan = await MembershipPlan.findByIdAndUpdate(
-      id,
+    const plan = await MembershipPlan.findOneAndUpdate(
+      { _id: id, gymId: gym._id },
       {
         name,
         price: parseFloat(price),
@@ -75,7 +95,11 @@ export const updatePlan = async (req, res, next) => {
 export const deletePlan = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const plan = await MembershipPlan.findByIdAndDelete(id);
+    const gym = await Gym.findOne({ ownerId: req.user.userId, isActive: true });
+    if (!gym) {
+      return res.status(404).json({ success: false, message: "Active gym not found" });
+    }
+    const plan = await MembershipPlan.findOneAndDelete({ _id: id, gymId: gym._id });
     if (!plan)
       return res
         .status(404)

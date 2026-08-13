@@ -3,8 +3,7 @@ import Attendance from "../../models/Attendance.js";
 import Exercise from "../../models/Exercise.js";
 import WorkoutLog from "../../models/WorkoutLog.js";
 import Membership from "../../models/Membership.js";
-import Plan from "../../models/Plan.js";
-import GymJoinRequest from "../../models/GymJoinRequest.js";
+import MembershipPlan from "../../models/MembershipPlan.js";
 import Notification from "../../models/Notification.js";
 import Gym from "../../models/Gym.js";
 import { uploadBufferToCloudinary } from "../../utils/cloudinary.js";
@@ -613,27 +612,19 @@ export const getAvailablePlans = async (req, res, next) => {
           enrolledGymId = membership.gymId;
           await User.findByIdAndUpdate(userId, { gymId: enrolledGymId });
         } else {
-          const approvedReq = await GymJoinRequest.findOne({
-            memberId: userId,
-            status: "approved",
-          }).select("gymId");
-          if (approvedReq && approvedReq.gymId) {
-            enrolledGymId = approvedReq.gymId;
-            await User.findByIdAndUpdate(userId, { gymId: enrolledGymId });
-          }
         }
       }
     }
 
     let plans = [];
     if (enrolledGymId) {
-      plans = await Plan.find({ gymId: enrolledGymId, isActive: true }).sort({
+      plans = await MembershipPlan.find({ gymId: enrolledGymId }).sort({
         price: 1,
       });
     }
 
     if (!plans || plans.length === 0) {
-      plans = await Plan.find({ isActive: true }).sort({ price: 1 });
+      plans = await MembershipPlan.find({}).sort({ price: 1 });
     }
 
     return res.status(200).json({
@@ -657,7 +648,7 @@ export const subscribeToPlan = async (req, res, next) => {
     const userId = req.user.userId;
     const { planId, paymentMethod, amount } = req.body;
 
-    const plan = await Plan.findById(planId);
+    const plan = await MembershipPlan.findById(planId);
 
     if (userId && plan) {
       await Membership.findOneAndUpdate(

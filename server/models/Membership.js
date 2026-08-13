@@ -39,6 +39,7 @@ const membershipSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    features: [{ type: String }],
     joinedAt: {
       type: Date,
       default: Date.now,

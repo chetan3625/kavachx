@@ -5,13 +5,14 @@ const attendanceSchema = new mongoose.Schema(
     gymId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Gym",
-      required: true
+      required: false
     },
     memberId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      required: true
+      required: false
     },
+    dateStr: { type: String, index: true },
     dateString: {
       type: String, // Format: YYYY-MM-DD
       required: true
@@ -24,6 +25,7 @@ const attendanceSchema = new mongoose.Schema(
       type: Date,
       default: null
     },
+    status: { type: String, enum: ["checked_in", "checked_out"], default: "checked_in" },
     streakDays: {
       type: Number,
       default: 1

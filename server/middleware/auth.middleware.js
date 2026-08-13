@@ -1,4 +1,5 @@
 import jwt from "jsonwebtoken";
+import { env } from "../config/env.js";
 
 export const protect = async (req, res, next) => {
   let token;
@@ -17,7 +18,7 @@ export const protect = async (req, res, next) => {
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, env.JWT_ACCESS_SECRET);
     req.user = decoded; // Contains userId and role
     next();
   } catch (error) {

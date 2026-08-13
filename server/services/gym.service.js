@@ -20,16 +20,16 @@ export const createJoinRequest = async (memberId, gymToken) => {
   }
 
   // Check pending request
-  const existingRequest = await GymJoinRequest.findOne({ memberId, gymId: gym._id, status: "pending" });
+  const existingRequest = await GymJoinRequest.findOne({ userId: memberId, gymId: gym._id, status: "pending" });
 
   if (existingRequest) {
     throw new ApiError(400, "There is already a pending join request for this gym");
   }
 
-  const reqDoc = await GymJoinRequest.create({ memberId, gymId: gym._id });
+  const reqDoc = await GymJoinRequest.create({ userId: memberId, gymId: gym._id });
 
   const populatedReq = await GymJoinRequest.findById(reqDoc._id)
-    .populate("memberId", "name email phone")
+    .populate("userId", "name email phone")
     .populate("gymId", "name");
 
   // Emit real-time Socket.IO event to Gym Owner's room
@@ -54,7 +54,7 @@ export const getPendingRequestsForOwner = async (ownerId) => {
   const gymIds = gyms.map((g) => g._id);
 
   const requests = await GymJoinRequest.find({ gymId: { $in: gymIds }, status: "pending" })
-    .populate("memberId", "name email phone")
+    .populate("userId", "name email phone")
     .populate("gymId", "name");
 
   return requests;
@@ -90,11 +90,11 @@ export const approveJoinRequest = async (requestId, ownerId) => {
   if (reqDoc.status === "approved") {
     // Already approved - ensure membership & user gymId are linked and return gracefully
     await Membership.findOneAndUpdate(
-      { memberId: reqDoc.memberId, gymId: reqDoc.gymId },
-      { memberId: reqDoc.memberId, gymId: reqDoc.gymId, status: "active" },
+      { memberId: reqDoc.userId, gymId: reqDoc.gymId },
+      { memberId: reqDoc.userId, gymId: reqDoc.gymId, status: "active" },
       { upsert: true, new: true }
     );
-    await User.findByIdAndUpdate(reqDoc.memberId, { gymId: reqDoc.gymId });
+    await User.findByIdAndUpdate(reqDoc.userId, { gymId: reqDoc.gymId });
     return reqDoc;
   }
 
@@ -110,16 +110,16 @@ export const approveJoinRequest = async (requestId, ownerId) => {
 
   // Create or update membership (safely upserting without duplicate key error)
   await Membership.findOneAndUpdate(
-    { memberId: reqDoc.memberId, gymId: reqDoc.gymId },
-    { memberId: reqDoc.memberId, gymId: reqDoc.gymId, status: "active" },
+    { memberId: reqDoc.userId, gymId: reqDoc.gymId },
+    { memberId: reqDoc.userId, gymId: reqDoc.gymId, status: "active" },
     { upsert: true, new: true }
   );
-  await User.findByIdAndUpdate(reqDoc.memberId, { gymId: reqDoc.gymId });
+  await User.findByIdAndUpdate(reqDoc.userId, { gymId: reqDoc.gymId });
 
   // Emit real-time Socket.IO event
   try {
     const io = getIO();
-    const memberIdStr = reqDoc.memberId._id ? reqDoc.memberId._id.toString() : reqDoc.memberId.toString();
+    const memberIdStr = reqDoc.userId._id ? reqDoc.userId._id.toString() : reqDoc.userId.toString();
     const ownerIdStr = ownerId._id ? ownerId._id.toString() : ownerId.toString();
 
     console.log(`[SOCKET.IO SERVER] Emitting join_request_updated (approved) to member_${memberIdStr} and owner_${ownerIdStr}`);
@@ -167,7 +167,7 @@ export const rejectJoinRequest = async (requestId, ownerId) => {
   // Emit real-time Socket.IO event
   try {
     const io = getIO();
-    const memberIdStr = reqDoc.memberId._id ? reqDoc.memberId._id.toString() : reqDoc.memberId.toString();
+    const memberIdStr = reqDoc.userId._id ? reqDoc.userId._id.toString() : reqDoc.userId.toString();
     const ownerIdStr = ownerId._id ? ownerId._id.toString() : ownerId.toString();
 
     console.log(`[SOCKET.IO SERVER] Emitting join_request_updated (rejected) to member_${memberIdStr} and owner_${ownerIdStr}`);

@@ -5,22 +5,28 @@ const exerciseSchema = new mongoose.Schema(
     gymId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Gym",
-      required: true
+      required: false
     },
     memberId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      required: true
+      required: false
     },
     dateString: {
       type: String, // YYYY-MM-DD
-      required: true
+      required: false
     },
+    dateStr: { type: String, index: true },
     name: {
       type: String,
       required: true,
       trim: true
     },
+    muscleGroup: { type: String, default: "" },
+    weightInKg: { type: Number, default: 0 },
+    repsPerSet: { type: Number, default: 0 },
+    durationMinutes: { type: Number, default: 0 },
+    notes: { type: String, default: "" },
     totalSets: {
       type: Number,
       required: true,

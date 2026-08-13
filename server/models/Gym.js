@@ -11,6 +11,8 @@ const gymSchema = new mongoose.Schema(
     name: { type: String, required: true, trim: true },
     address: { type: String, required: true },
     phone: { type: String, required: true },
+    gymToken: { type: String, unique: true, sparse: true, index: true },
+    qrUrl: { type: String, default: null },
     isActive: { type: Boolean, default: true },
   },
   { timestamps: true },

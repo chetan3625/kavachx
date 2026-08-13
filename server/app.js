@@ -10,9 +10,7 @@ import { env } from "./config/env.js";
 import routes from "./routes/index.js";
 import { requestResponseLogger } from "./middleware/logging.middleware.js";
 
-import {
-  errorHandler
-} from "./middleware/error.middleware.js";
+import { errorHandler, notFound } from "./middleware/error.middleware.js";
 
 const app = express();
 
@@ -90,6 +88,7 @@ app.use(
 
 
 // Error handler
+app.use(notFound);
 app.use(
   errorHandler
 );

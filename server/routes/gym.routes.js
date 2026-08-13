@@ -9,6 +9,7 @@ import {
 } from "../controllers/gyms/gym.controller.js";
 import {
   getPlans,
+  getPlan,
   createPlan,
   updatePlan,
   deletePlan,
@@ -21,6 +22,7 @@ const router = express.Router();
 // Plans
 router.get("/plans", protect, authorize("gym_owner"), getPlans);
 router.post("/plans", protect, authorize("gym_owner"), createPlan);
+router.get("/plans/:id", protect, authorize("gym_owner"), getPlan);
 router.put("/plans/:id", protect, authorize("gym_owner"), updatePlan);
 router.delete("/plans/:id", protect, authorize("gym_owner"), deletePlan);
 

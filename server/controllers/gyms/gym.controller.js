@@ -1,24 +1,16 @@
 import Gym from "../../models/Gym.js";
 import User from "../../models/User.js";
-import JoinRequest from "../../models/JoinRequest.js";
+import GymJoinRequest from "../../models/GymJoinRequest.js";
+import {
+  approveJoinRequest,
+  createJoinRequest,
+  getPendingRequestsForOwner,
+  rejectJoinRequest,
+} from "../../services/gym.service.js";
 
 export const joinRequest = async (req, res, next) => {
   try {
-    const { gymId } = req.body;
-    const userId = req.user.userId;
-
-    const existing = await JoinRequest.findOne({
-      userId,
-      gymId,
-      status: "pending",
-    });
-    if (existing) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Join request already pending." });
-    }
-
-    const request = await JoinRequest.create({ userId, gymId });
+    const request = await createJoinRequest(req.user.userId, req.body.gymToken);
     return res.status(201).json({ success: true, data: request });
   } catch (error) {
     next(error);
@@ -27,17 +19,7 @@ export const joinRequest = async (req, res, next) => {
 
 export const listPendingRequests = async (req, res, next) => {
   try {
-    const ownerId = req.user.userId;
-    const gym = await Gym.findOne({ ownerId, isActive: true });
-    if (!gym)
-      return res
-        .status(404)
-        .json({ success: false, message: "Active gym not found." });
-
-    const requests = await JoinRequest.find({
-      gymId: gym._id,
-      status: "pending",
-    }).populate("userId", "name email");
+    const requests = await getPendingRequestsForOwner(req.user.userId);
     return res
       .status(200)
       .json({ success: true, count: requests.length, data: requests });
@@ -49,30 +31,7 @@ export const listPendingRequests = async (req, res, next) => {
 export const approveRequest = async (req, res, next) => {
   try {
     const { requestId } = req.params;
-    const ownerId = req.user.userId;
-
-    const gym = await Gym.findOne({ ownerId, isActive: true });
-    if (!gym)
-      return res
-        .status(404)
-        .json({ success: false, message: "Active gym not found." });
-
-    const request = await JoinRequest.findById(requestId);
-    if (!request || request.status !== "pending") {
-      return res
-        .status(400)
-        .json({ success: false, message: "Invalid or processed request." });
-    }
-
-    request.status = "approved";
-    await request.save();
-
-    // Link user document without strict mode violations
-    await User.findByIdAndUpdate(
-      request.userId,
-      { gymId: gym._id, role: "gym_member", isApproved: true },
-      { new: true, runValidators: true },
-    );
+    await approveJoinRequest(requestId, req.user.userId);
 
     return res
       .status(200)
@@ -85,11 +44,7 @@ export const approveRequest = async (req, res, next) => {
 export const rejectRequest = async (req, res, next) => {
   try {
     const { requestId } = req.params;
-    const request = await JoinRequest.findByIdAndUpdate(
-      requestId,
-      { status: "rejected" },
-      { new: true },
-    );
+    const request = await rejectJoinRequest(requestId, req.user.userId);
     return res.status(200).json({ success: true, data: request });
   } catch (error) {
     next(error);

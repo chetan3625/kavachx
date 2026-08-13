@@ -1,103 +1,96 @@
-import User from "../models/User.js";
-import jwt from "jsonwebtoken";
+import {
+  changePasswordService,
+  forgotPasswordService,
+  getCurrentUser,
+  loginUser,
+  logoutUser,
+  refreshUserToken,
+  registerMember as registerMemberService,
+  registerOwner as registerOwnerService,
+  resetPasswordService,
+} from "../../services/auth.service.js";
+import { env } from "../../config/env.js";
 
-const generateToken = (userId, role) => {
-  return jwt.sign({ userId, role }, process.env.JWT_SECRET, {
-    expiresIn: "30d",
+const serializeUser = (user) => ({
+  id: user._id,
+  name: user.name,
+  email: user.email,
+  phone: user.phone,
+  role: user.role,
+  gymId: user.gymId,
+});
+
+const sendAuthResponse = (res, status, result) => {
+  res.status(status).json({
+    success: true,
+    accessToken: result.accessToken,
+    refreshToken: result.refreshToken,
+    // `token` is retained for older clients.
+    token: result.accessToken,
+    user: serializeUser(result.user),
+    data: { user: serializeUser(result.user), gym: result.gym, gymToken: result.gymToken, joinUrl: result.joinUrl, qrUrl: result.qrUrl },
   });
 };
 
-export const register = async (req, res, next) => {
+export const registerOwner = async (req, res, next) => {
   try {
-    const { name, email, password, role } = req.body;
-    const existingUser = await User.findOne({ email });
+    const result = await registerOwnerService(req.body);
+    sendAuthResponse(res, 201, result);
+  } catch (error) { next(error); }
+};
 
-    if (existingUser) {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: "User already exists with this email.",
-        });
-    }
-
-    const user = await User.create({ name, email, password, role });
-    const token = generateToken(user._id, user.role);
-
-    return res.status(201).json({
-      success: true,
-      token,
-      data: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-      },
-    });
-  } catch (error) {
-    next(error);
-  }
+export const registerMember = async (req, res, next) => {
+  try {
+    const result = await registerMemberService(req.body);
+    sendAuthResponse(res, 201, result);
+  } catch (error) { next(error); }
 };
 
 export const login = async (req, res, next) => {
   try {
-    const { email, password } = req.body;
-    const user = await User.findOne({ email });
-
-    if (!user || !(await user.matchPassword(password))) {
-      return res
-        .status(401)
-        .json({ success: false, message: "Invalid email or password." });
-    }
-
-    user.lastActiveAt = new Date();
-    await user.save();
-
-    const token = generateToken(user._id, user.role);
-
-    return res.status(200).json({
-      success: true,
-      token,
-      data: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        gymId: user.gymId,
-      },
-    });
-  } catch (error) {
-    next(error);
-  }
+    const result = await loginUser(req.body);
+    sendAuthResponse(res, 200, result);
+  } catch (error) { next(error); }
 };
 
-// GET /api/v1/auth/me
+export const refresh = async (req, res, next) => {
+  try {
+    const result = await refreshUserToken(req.body.refreshToken);
+    res.status(200).json({ success: true, accessToken: result.accessToken, token: result.accessToken });
+  } catch (error) { next(error); }
+};
+
+export const logout = async (req, res, next) => {
+  try {
+    await logoutUser(req.user.userId);
+    res.status(200).json({ success: true, message: "Logged out successfully" });
+  } catch (error) { next(error); }
+};
+
 export const getMe = async (req, res, next) => {
   try {
-    // Check both req.user.userId and req.user._id safely
-    const targetId = req.user?.userId || req.user?._id || req.user?.id;
+    const user = await getCurrentUser(req.user.userId);
+    res.status(200).json({ success: true, data: serializeUser(user), user: serializeUser(user) });
+  } catch (error) { next(error); }
+};
 
-    if (!targetId) {
-      return res.status(401).json({
-        success: false,
-        message: "Invalid token payload — user ID missing",
-      });
-    }
+export const forgotPassword = async (req, res, next) => {
+  try {
+    await forgotPasswordService(req.body.email);
+    res.status(200).json({ success: true, message: "Password reset email sent" });
+  } catch (error) { next(error); }
+};
 
-    const user = await User.findById(targetId).select("-password");
+export const resetPassword = async (req, res, next) => {
+  try {
+    await resetPasswordService(req.params.token, req.body.password);
+    res.status(200).json({ success: true, message: "Password reset successfully" });
+  } catch (error) { next(error); }
+};
 
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: "User account not found",
-      });
-    }
-
-    return res.status(200).json({
-      success: true,
-      data: user,
-    });
-  } catch (error) {
-    next(error);
-  }
+export const changePassword = async (req, res, next) => {
+  try {
+    await changePasswordService(req.user.userId, req.body.oldPassword, req.body.newPassword);
+    res.status(200).json({ success: true, message: "Password changed successfully" });
+  } catch (error) { next(error); }
 };
