@@ -71,15 +71,32 @@ export const login = async (req, res, next) => {
   }
 };
 
+// GET /api/v1/auth/me
 export const getMe = async (req, res, next) => {
   try {
-    const user = await User.findById(req.user.userId).select("-password");
-    if (!user) {
-      return res
-        .status(404)
-        .json({ success: false, message: "User not found." });
+    // Check both req.user.userId and req.user._id safely
+    const targetId = req.user?.userId || req.user?._id || req.user?.id;
+
+    if (!targetId) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid token payload — user ID missing",
+      });
     }
-    return res.status(200).json({ success: true, data: user });
+
+    const user = await User.findById(targetId).select("-password");
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User account not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: user,
+    });
   } catch (error) {
     next(error);
   }
