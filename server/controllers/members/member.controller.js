@@ -270,7 +270,7 @@ export const getAvailablePlans = async (req, res, next) => {
   } catch (error) {
     next(error);
   }
-}P
+};
 // POST /api/v1/members/check-out
 export const memberCheckOut = async (req, res, next) => {
   try {
