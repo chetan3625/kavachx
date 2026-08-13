@@ -1,3 +1,4 @@
+import asyncHandler from "../../utils/AsyncHandler.js";
 import {
   changePasswordService,
   forgotPasswordService,
@@ -9,7 +10,6 @@ import {
   registerOwner as registerOwnerService,
   resetPasswordService,
 } from "../../services/auth.service.js";
-import { env } from "../../config/env.js";
 
 const serializeUser = (user) => {
   if (!user) return null;
@@ -28,7 +28,7 @@ const serializeUser = (user) => {
 const sendAuthResponse = (res, status, result) => {
   const serializedUser = serializeUser(result.user);
 
-  res.status(status).json({
+  return res.status(status).json({
     success: true,
     accessToken: result.accessToken,
     refreshToken: result.refreshToken,
@@ -50,102 +50,68 @@ const sendAuthResponse = (res, status, result) => {
   });
 };
 
-export const registerOwner = async (req, res, next) => {
-  try {
-    const result = await registerOwnerService(req.body);
-    sendAuthResponse(res, 201, result);
-  } catch (error) {
-    next(error);
-  }
-};
+export const registerOwner = asyncHandler(async (req, res) => {
+  const result = await registerOwnerService(req.body);
+  return sendAuthResponse(res, 201, result);
+});
 
-export const registerMember = async (req, res, next) => {
-  try {
-    const result = await registerMemberService(req.body);
-    sendAuthResponse(res, 201, result);
-  } catch (error) {
-    next(error);
-  }
-};
+export const registerMember = asyncHandler(async (req, res) => {
+  const result = await registerMemberService(req.body);
+  return sendAuthResponse(res, 201, result);
+});
 
-export const login = async (req, res, next) => {
-  try {
-    const result = await loginUser(req.body);
-    sendAuthResponse(res, 200, result);
-  } catch (error) {
-    next(error);
-  }
-};
+export const login = asyncHandler(async (req, res) => {
+  const result = await loginUser(req.body);
+  return sendAuthResponse(res, 200, result);
+});
 
-export const refresh = async (req, res, next) => {
-  try {
-    const result = await refreshUserToken(req.body.refreshToken);
-    res.status(200).json({
-      success: true,
-      accessToken: result.accessToken,
-      token: result.accessToken,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
+export const refresh = asyncHandler(async (req, res) => {
+  const result = await refreshUserToken(req.body.refreshToken);
+  return res.status(200).json({
+    success: true,
+    accessToken: result.accessToken,
+    token: result.accessToken,
+  });
+});
 
-export const logout = async (req, res, next) => {
-  try {
-    await logoutUser(req.user.userId);
-    res.status(200).json({ success: true, message: "Logged out successfully" });
-  } catch (error) {
-    next(error);
-  }
-};
+export const logout = asyncHandler(async (req, res) => {
+  await logoutUser(req.user.userId);
+  return res
+    .status(200)
+    .json({ success: true, message: "Logged out successfully" });
+});
 
-export const getMe = async (req, res, next) => {
-  try {
-    const user = await getCurrentUser(req.user.userId);
-    const serializedUser = serializeUser(user);
-    res.status(200).json({
-      success: true,
-      data: { user: serializedUser },
-      user: serializedUser,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
+export const getMe = asyncHandler(async (req, res) => {
+  const user = await getCurrentUser(req.user.userId);
+  const serializedUser = serializeUser(user);
+  return res.status(200).json({
+    success: true,
+    data: { user: serializedUser },
+    user: serializedUser,
+  });
+});
 
-export const forgotPassword = async (req, res, next) => {
-  try {
-    await forgotPasswordService(req.body.email);
-    res
-      .status(200)
-      .json({ success: true, message: "Password reset email sent" });
-  } catch (error) {
-    next(error);
-  }
-};
+export const forgotPassword = asyncHandler(async (req, res) => {
+  await forgotPasswordService(req.body.email);
+  return res
+    .status(200)
+    .json({ success: true, message: "Password reset email sent" });
+});
 
-export const resetPassword = async (req, res, next) => {
-  try {
-    await resetPasswordService(req.params.token, req.body.password);
-    res
-      .status(200)
-      .json({ success: true, message: "Password reset successfully" });
-  } catch (error) {
-    next(error);
-  }
-};
+export const resetPassword = asyncHandler(async (req, res) => {
+  await resetPasswordService(req.params.token, req.body.password);
+  return res
+    .status(200)
+    .json({ success: true, message: "Password reset successfully" });
+});
 
-export const changePassword = async (req, res, next) => {
-  try {
-    await changePasswordService(
-      req.user.userId,
-      req.body.oldPassword,
-      req.body.newPassword,
-    );
-    res
-      .status(200)
-      .json({ success: true, message: "Password changed successfully" });
-  } catch (error) {
-    next(error);
-  }
-};
+export const changePassword = asyncHandler(async (req, res) => {
+  await changePasswordService(
+    req.user.userId,
+    req.body.oldPassword,
+    req.body.newPassword,
+  );
+  return res
+    .status(200)
+    .json({ success: true, message: "Password changed successfully" });
+});
