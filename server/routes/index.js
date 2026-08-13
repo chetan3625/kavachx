@@ -2,20 +2,12 @@ import express from "express";
 
 import authRoutes from "./auth.routes.js";
 import gymRoutes from "./gym.routes.js";
-import attendanceRoutes from "./attendance.routes.js";
-import exerciseRoutes from "./exercise.routes.js";
+import memberRoutes from "./member.routes.js"; // <-- ADD THIS IMPORT
 
 const router = express.Router();
 
-router.use(
-  "/auth",
-  authRoutes
-);
-
+router.use("/auth", authRoutes);
 router.use("/gyms", gymRoutes);
-router.use("/attendance", attendanceRoutes);
-router.use("/exercises", exerciseRoutes);
-
-router.use("/members", memberRoutes);
+router.use("/members", memberRoutes); // Line 19 works now!
 
 export default router;
