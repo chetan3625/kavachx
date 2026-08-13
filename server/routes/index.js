@@ -7,6 +7,9 @@ import memberRoutes from "./member.routes.js"; // <-- ADD THIS IMPORT
 const router = express.Router();
 
 router.use("/auth", authRoutes);
+
+
+
 router.use("/gyms", gymRoutes);
 router.use("/members", memberRoutes); // Line 19 works now!
 
