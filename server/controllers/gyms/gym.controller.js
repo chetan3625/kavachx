@@ -1,4 +1,4 @@
-import JoinRequest from "../../models/JoinRequest.js";
+import JoinRequest from "../../models/GymJoinRequest.js";
 import User from "../../models/User.js";
 import Gym from "../../models/Gym.js";
 
