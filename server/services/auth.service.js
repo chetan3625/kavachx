@@ -17,13 +17,19 @@ export const registerUser = async ({ name, email, phone, password }) => {
 
   const existingEmail = await User.findOne({ email: normalizedEmail });
   if (existingEmail) {
-    throw new ApiError(409, "Email already registered");
+    throw new ApiError(
+      409,
+      `Email '${normalizedEmail}' is already registered.`,
+    );
   }
 
   if (normalizedPhone) {
     const existingPhone = await User.findOne({ phone: normalizedPhone });
     if (existingPhone) {
-      throw new ApiError(409, "Phone number already registered");
+      throw new ApiError(
+        409,
+        `Phone number '${normalizedPhone}' is already registered to user: ${existingPhone.name} (${existingPhone.email})`,
+      );
     }
   }
 
@@ -119,17 +125,23 @@ export const registerOwner = async ({
   const normalizedEmail = email.toLowerCase().trim();
   const normalizedPhone = phone ? phone.toString().trim() : null;
 
-  // 1. Precise Email Check
+  // 1. Check Email
   const existingEmail = await User.findOne({ email: normalizedEmail });
   if (existingEmail) {
-    throw new ApiError(409, "Email already registered");
+    throw new ApiError(
+      409,
+      `Email '${normalizedEmail}' is already registered.`,
+    );
   }
 
-  // 2. Precise Phone Check (Only if phone is provided)
+  // 2. Check Phone
   if (normalizedPhone) {
     const existingPhone = await User.findOne({ phone: normalizedPhone });
     if (existingPhone) {
-      throw new ApiError(409, "Phone number already registered");
+      throw new ApiError(
+        409,
+        `Phone number '${normalizedPhone}' is already registered to existing account (${existingPhone.email}). Please use a completely unique phone number.`,
+      );
     }
   }
 
@@ -204,13 +216,19 @@ export const registerMember = async ({ name, email, phone, password }) => {
 
   const existingEmail = await User.findOne({ email: normalizedEmail });
   if (existingEmail) {
-    throw new ApiError(409, "Email already registered");
+    throw new ApiError(
+      409,
+      `Email '${normalizedEmail}' is already registered.`,
+    );
   }
 
   if (normalizedPhone) {
     const existingPhone = await User.findOne({ phone: normalizedPhone });
     if (existingPhone) {
-      throw new ApiError(409, "Phone number already registered");
+      throw new ApiError(
+        409,
+        `Phone number '${normalizedPhone}' is already registered.`,
+      );
     }
   }
 
@@ -249,7 +267,7 @@ export const forgotPasswordService = async (email) => {
   await user.save({ validateBeforeSave: false });
 
   const resetUrl = `${env.CLIENT_URL}/reset-password/${resetToken}`;
-  const message = `You are receiving this email because you requested a password reset. Please use: \n\n ${resetUrl}`;
+  const message = `You requested a password reset. Please use: \n\n ${resetUrl}`;
 
   try {
     await sendEmail({
