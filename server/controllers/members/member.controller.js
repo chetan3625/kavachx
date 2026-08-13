@@ -2,7 +2,7 @@ import User from "../../models/User.js";
 import Attendance from "../../models/Attendance.js";
 import Exercise from "../../models/Exercise.js";
 import WorkoutLog from "../../models/WorkoutLog.js";
-import Membership from "../../models/MembershipPlan.js";
+import Membership from "../../models/Membership.js";
 import Plan from "../../models/Plan.js";
 import GymJoinRequest from "../../models/GymJoinRequest.js";
 import Notification from "../../models/Notification.js";

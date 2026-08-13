@@ -112,7 +112,7 @@ export const sendWaterReminders = async () => {
 export const sendMembershipExpiryReminders = async () => {
   try {
     // Import Membership model dynamically to avoid circular deps
-    const { default: Membership } = await import("../models/MembershipPlan.js");
+    const { default: Membership } = await import("../models/Membership.js");
 
     const now = new Date();
     const warningDays = [7, 3, 1];
