@@ -87,8 +87,19 @@ export const approveJoinRequest = async (requestId, ownerId) => {
     throw new ApiError(403, "Not authorized to approve this request");
   }
 
+  if (reqDoc.status === "approved") {
+    // Already approved - ensure membership & user gymId are linked and return gracefully
+    await Membership.findOneAndUpdate(
+      { memberId: reqDoc.memberId, gymId: reqDoc.gymId },
+      { memberId: reqDoc.memberId, gymId: reqDoc.gymId, status: "active" },
+      { upsert: true, new: true }
+    );
+    await User.findByIdAndUpdate(reqDoc.memberId, { gymId: reqDoc.gymId });
+    return reqDoc;
+  }
+
   if (reqDoc.status !== "pending") {
-    throw new ApiError(400, "Request is not pending");
+    throw new ApiError(400, `Request status is currently '${reqDoc.status}' and cannot be approved.`);
   }
 
   reqDoc.status = "approved";
@@ -97,8 +108,12 @@ export const approveJoinRequest = async (requestId, ownerId) => {
 
   await reqDoc.save();
 
-  // Create membership (unique index prevents duplicates)
-  await Membership.create({ memberId: reqDoc.memberId, gymId: reqDoc.gymId });
+  // Create or update membership (safely upserting without duplicate key error)
+  await Membership.findOneAndUpdate(
+    { memberId: reqDoc.memberId, gymId: reqDoc.gymId },
+    { memberId: reqDoc.memberId, gymId: reqDoc.gymId, status: "active" },
+    { upsert: true, new: true }
+  );
   await User.findByIdAndUpdate(reqDoc.memberId, { gymId: reqDoc.gymId });
 
   // Emit real-time Socket.IO event
@@ -135,8 +150,12 @@ export const rejectJoinRequest = async (requestId, ownerId) => {
     throw new ApiError(403, "Not authorized to reject this request");
   }
 
+  if (reqDoc.status === "rejected") {
+    return reqDoc;
+  }
+
   if (reqDoc.status !== "pending") {
-    throw new ApiError(400, "Request is not pending");
+    throw new ApiError(400, `Request status is currently '${reqDoc.status}' and cannot be rejected.`);
   }
 
   reqDoc.status = "rejected";
