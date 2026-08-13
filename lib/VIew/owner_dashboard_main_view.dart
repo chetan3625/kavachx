@@ -544,7 +544,7 @@ class OwnerDashboardMainView extends StatelessWidget {
     OwnerDashboardController controller,
     Map<String, dynamic> req,
   ) {
-    final member = req['memberId'] ?? {};
+    final member = req['userId'] ?? req['memberId'] ?? {};
     final String name = member['name'] ?? 'Member';
     final String reqId = req['_id'] ?? req['id'] ?? '';
 

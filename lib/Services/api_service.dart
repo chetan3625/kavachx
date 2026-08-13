@@ -5,9 +5,8 @@ import 'package:get_storage/get_storage.dart';
 class ApiService extends GetConnect {
   static ApiService get to => Get.find();
 
-  // For Real Physical Phone (Wi-Fi), use your PC IP address: http://10.77.95.199:5000/api/v1
-  // For Android Emulator, use http://10.0.2.2:5000/api/v1
-  static const String baseUrlString = 'https://kavachx-xc1c.onrender.com/api/v1';
+  static const String baseUrlString =
+      'https://kavachx-xc1c.onrender.com/api/v1';
 
   // Storage Key Constants
   static const String _tokenKey = 'access_token';
@@ -22,7 +21,7 @@ class ApiService extends GetConnect {
   void onInit() {
     httpClient.baseUrl = baseUrlString;
     httpClient.timeout = const Duration(seconds: 15);
-    // Fallback if 10.77.95.199 fails on emulator
+
     httpClient.addAuthenticator<dynamic>((request) async {
       return request;
     });
@@ -31,10 +30,14 @@ class ApiService extends GetConnect {
       if (response.status.hasError && response.status.connectionError) {
         if (httpClient.baseUrl?.contains('10.77.95.199') ?? false) {
           httpClient.baseUrl = 'http://10.0.2.2:5000/api/v1';
-          debugPrint('[API FALLBACK] Switched baseUrl to http://10.0.2.2:5000/api/v1');
+          debugPrint(
+            '[API FALLBACK] Switched baseUrl to http://10.0.2.2:5000/api/v1',
+          );
         } else if (httpClient.baseUrl?.contains('10.0.2.2') ?? false) {
           httpClient.baseUrl = 'http://10.77.95.199:5000/api/v1';
-          debugPrint('[API FALLBACK] Switched baseUrl to http://10.77.95.199:5000/api/v1');
+          debugPrint(
+            '[API FALLBACK] Switched baseUrl to http://10.77.95.199:5000/api/v1',
+          );
         }
       }
       return response;
@@ -64,8 +67,11 @@ class ApiService extends GetConnect {
       debugPrint('================================================');
 
       // Auto Session Expiration handling on 401
-      if (response.statusCode == 401 && !request.url.path.contains('/auth/login')) {
-        debugPrint('Token expired or unauthorized. Clearing storage and redirecting...');
+      if (response.statusCode == 401 &&
+          !request.url.path.contains('/auth/login')) {
+        debugPrint(
+          'Token expired or unauthorized. Clearing storage and redirecting...',
+        );
         clearAuthData();
         Get.offAllNamed('/splash');
         Get.snackbar(
@@ -87,15 +93,19 @@ class ApiService extends GetConnect {
 
   // Save Token, User Data, Refresh Token, and QR Payload locally
   void saveAuthPayload(Map<String, dynamic> dataMap) {
-    final String? accessToken = dataMap['accessToken'];
+    final String? accessToken = dataMap['accessToken'] ?? dataMap['token'];
     final String? refreshToken = dataMap['refreshToken'];
-    final Map<String, dynamic>? userData = dataMap['user'];
-    final Map<String, dynamic>? qrData = dataMap['qr'];
+    final Map<String, dynamic>? userData = dataMap['user'] is Map
+        ? Map<String, dynamic>.from(dataMap['user'])
+        : null;
+    final Map<String, dynamic>? qrData = dataMap['qr'] is Map
+        ? Map<String, dynamic>.from(dataMap['qr'])
+        : null;
 
-    if (accessToken != null) {
+    if (accessToken != null && accessToken.isNotEmpty) {
       _storage.write(_tokenKey, accessToken);
     }
-    if (refreshToken != null) {
+    if (refreshToken != null && refreshToken.isNotEmpty) {
       _storage.write(_refreshTokenKey, refreshToken);
     }
     if (userData != null) {
@@ -111,7 +121,9 @@ class ApiService extends GetConnect {
         _storage.write(_qrUrlKey, qrData['joinUrl']);
       }
     }
-    final Map<String, dynamic>? gymData = dataMap['gym'];
+    final Map<String, dynamic>? gymData = dataMap['gym'] is Map
+        ? Map<String, dynamic>.from(dataMap['gym'])
+        : null;
     if (gymData != null && gymData['gymToken'] != null) {
       _storage.write(_qrTokenKey, gymData['gymToken']);
     }
@@ -120,7 +132,14 @@ class ApiService extends GetConnect {
   // Getters
   String? getToken() => _storage.read<String>(_tokenKey);
   String? getRefreshToken() => _storage.read<String>(_refreshTokenKey);
-  Map<String, dynamic>? getUserData() => _storage.read<Map<String, dynamic>>(_userKey);
+  Map<String, dynamic>? getUserData() {
+    final raw = _storage.read(_userKey);
+    if (raw != null && raw is Map) {
+      return Map<String, dynamic>.from(raw);
+    }
+    return null;
+  }
+
   String? getGymQrToken() => _storage.read<String>(_qrTokenKey);
   String? getGymQrUrl() => _storage.read<String>(_qrUrlKey);
 
@@ -174,21 +193,13 @@ class ApiService extends GetConnect {
     });
   }
 
-  Future<Response> login({
-    required String email,
-    required String password,
-  }) {
-    return post('/auth/login', {
-      'email': email,
-      'password': password,
-    });
+  Future<Response> login({required String email, required String password}) {
+    return post('/auth/login', {'email': email, 'password': password});
   }
 
   Future<Response> refresh() {
     final token = getRefreshToken();
-    return post('/auth/refresh', {
-      'refreshToken': token,
-    });
+    return post('/auth/refresh', {'refreshToken': token});
   }
 
   Future<Response> logout() {
@@ -202,9 +213,7 @@ class ApiService extends GetConnect {
   // ================= GYM ENDPOINTS =================
 
   Future<Response> joinRequest({required String gymToken}) {
-    return post('/gyms/join-request', {
-      'gymToken': gymToken,
-    });
+    return post('/gyms/join-request', {'gymToken': gymToken});
   }
 
   Future<Response> getJoinRequests() {
@@ -218,6 +227,7 @@ class ApiService extends GetConnect {
   Future<Response> rejectJoinRequest(String requestId) {
     return patch('/gyms/join-requests/$requestId/reject', {});
   }
+
   // ================= MEMBERSHIP PLAN ENDPOINTS =================
 
   Future<Response> getMembershipPlans() {
@@ -237,15 +247,11 @@ class ApiService extends GetConnect {
       'features': features,
     });
   }
-  // ================= MEMBERSHIP PLAN ENDPOINTS =================
-
-
 
   Future<Response> getPlanById(String planId) {
     return get('/gyms/plans/$planId');
   }
 
-  
   Future<Response> updateMembershipPlan({
     required String planId,
     required String name,
@@ -264,6 +270,7 @@ class ApiService extends GetConnect {
   Future<Response> deleteMembershipPlan(String planId) {
     return delete('/gyms/plans/$planId');
   }
+
   // ================= MEMBER DASHBOARD ENDPOINTS =================
 
   Future<Response> getMemberDashboardSummary() {
@@ -311,7 +318,7 @@ class ApiService extends GetConnect {
       'notes': notes,
     });
   }
-  // Fetch inactive members for owner
+
   Future<Response> getInactiveMembers({int days = 3}) {
     return get('/gyms/inactive-members', query: {'days': '$days'});
   }
@@ -319,7 +326,7 @@ class ApiService extends GetConnect {
   Future<Response> deleteExercise(String exerciseId) {
     return delete('/members/exercises/$exerciseId');
   }
-  // Broadcast notification to all gym members (Owner only)
+
   Future<Response> sendAnnouncement({
     required String title,
     required String message,
@@ -343,6 +350,7 @@ class ApiService extends GetConnect {
       'caloriesBurned': caloriesBurned,
     });
   }
+
   // ================= MEMBER SUBSCRIPTION ENDPOINTS =================
 
   Future<Response> getMemberCurrentPlan() {

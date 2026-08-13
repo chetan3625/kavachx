@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:kavachx/Controller/member_attendance_controller.dart';
+import 'package:kavachx/Controller/member_subscription_controller.dart';
 import 'package:kavachx/Model/exercise_model.dart';
 import 'package:kavachx/Services/api_service.dart';
+import 'package:kavachx/Services/socket_service.dart';
 
 class MemberDashboardController extends GetxController {
   final ApiService _apiService = Get.find<ApiService>();
@@ -12,16 +15,16 @@ class MemberDashboardController extends GetxController {
   final RxBool isLoading = false.obs;
 
   // Streak & Activity Stats
-  final RxInt currentStreakDays = 5.obs;
+  final RxInt currentStreakDays = 0.obs;
   final RxList<bool> weeklyActivity = <bool>[
-    true,
-    true,
-    true,
     false,
     false,
     false,
     false,
-  ].obs; // M T W T F S S
+    false,
+    false,
+    false,
+  ].obs;
 
   // Hydration Tracker
   final RxDouble currentWaterLitres = 2.5.obs;
@@ -44,6 +47,7 @@ class MemberDashboardController extends GetxController {
     super.onInit();
     loadUserData();
     fetchDashboardData();
+    _listenToRealtimeJoinApproval();
   }
 
   void loadUserData() {
@@ -56,11 +60,59 @@ class MemberDashboardController extends GetxController {
     }
     // Check gym association
     if (userData != null) {
-      final gymId = userData['gymId'] ?? userData['gym']?['_id'];
+      final gymId =
+          userData['gymId'] ??
+          userData['gym']?['_id'] ??
+          userData['gym']?['id'];
       isAssociatedWithGym.value = gymId != null && gymId.toString().isNotEmpty;
       if (userData['gym'] != null && userData['gym']['name'] != null) {
         gymName.value = userData['gym']['name'];
       }
+    }
+  }
+
+  void _listenToRealtimeJoinApproval() {
+    try {
+      if (Get.isRegistered<SocketService>()) {
+        final socketService = Get.find<SocketService>();
+        socketService.socket.on('join_request_updated', (data) async {
+          if (data != null && data is Map) {
+            final String status = data['status'] ?? '';
+
+            if (status == 'approved') {
+              // 1. Fetch fresh user info from backend
+              try {
+                final response = await _apiService.getMe();
+                if (response.isOk && response.body != null) {
+                  _apiService.saveAuthPayload(response.body);
+                }
+              } catch (_) {}
+
+              // 2. Refresh local state
+              loadUserData();
+              isAssociatedWithGym.value = true;
+              await fetchDashboardData();
+
+              // 3. Notify other active member controllers to refresh UI
+              if (Get.isRegistered<MemberAttendanceController>()) {
+                Get.find<MemberAttendanceController>()
+                    .checkGymAssociationAndRefresh();
+              }
+              if (Get.isRegistered<MemberSubscriptionController>()) {
+                Get.find<MemberSubscriptionController>()
+                    .checkGymAssociationAndRefresh();
+              }
+
+              _showSnackbar(
+                'Approved! 🎉',
+                'Your gym join request was approved by the owner!',
+              );
+            }
+          }
+        });
+      }
+    } catch (e) {
+      debugPrint('[MemberDashboardController] Socket listener error: $e');
     }
   }
 
@@ -84,7 +136,8 @@ class MemberDashboardController extends GetxController {
         }
 
         if (data['hasCompletedTodayAttendance'] != null) {
-          hasCompletedTodayAttendance.value = data['hasCompletedTodayAttendance'];
+          hasCompletedTodayAttendance.value =
+              data['hasCompletedTodayAttendance'];
         }
 
         if (data['exercises'] != null) {
@@ -117,7 +170,6 @@ class MemberDashboardController extends GetxController {
         isCheckedIn.value = status;
         if (!status) {
           hasCompletedTodayAttendance.value = true;
-          // Instantly update today's activity bubble to green
           final todayIndex = (DateTime.now().weekday - 1) % 7;
           if (todayIndex < weeklyActivity.length) {
             weeklyActivity[todayIndex] = true;
@@ -130,7 +182,8 @@ class MemberDashboardController extends GetxController {
           isError: !status,
         );
       } else {
-        final message = response.body?['message'] ??
+        final message =
+            response.body?['message'] ??
             (status ? 'Check-in failed' : 'Check-out failed');
         _showSnackbar('Notice', message, isError: true);
       }

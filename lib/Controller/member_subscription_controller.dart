@@ -16,24 +16,29 @@ class MemberSubscriptionController extends GetxController {
   final RxBool isSubscribing = false.obs;
   final RxString selectedPaymentMethod = 'UPI'.obs;
 
-  // Tracks if user is linked to a gym (SAAS multi‑gym support)
+  // Tracks if user is linked to a gym
   final RxBool isAssociatedWithGym = false.obs;
 
   @override
   void onInit() {
     super.onInit();
-    _checkGymAssociation();
-    if (isAssociatedWithGym.value) {
-      fetchSubscriptionDetails();
-    }
+    checkGymAssociationAndRefresh();
   }
 
-  void _checkGymAssociation() {
-    // Reuse the same logic as dashboard controller to determine gym link
+  void checkGymAssociationAndRefresh() {
     final userData = _apiService.getUserData();
     if (userData != null) {
-      final gymId = userData['gymId'] ?? userData['gym']?['_id'];
+      final gymId =
+          userData['gymId'] ??
+          userData['gym']?['_id'] ??
+          userData['gym']?['id'];
       isAssociatedWithGym.value = gymId != null && gymId.toString().isNotEmpty;
+    } else {
+      isAssociatedWithGym.value = false;
+    }
+
+    if (isAssociatedWithGym.value) {
+      fetchSubscriptionDetails();
     }
   }
 
@@ -46,10 +51,9 @@ class MemberSubscriptionController extends GetxController {
         final subData = subRes.body['data'] ?? subRes.body;
         if (subData != null && subData['id'] != null) {
           currentSubscription.value = MemberSubscriptionModel.fromJson(subData);
+        } else {
+          currentSubscription.value = null;
         }
-      } else {
-        // Fallback sample active plan for UI testing
-        _loadFallbackSubscription();
       }
 
       // 2. Fetch all available plans for the member's joined gym
@@ -59,68 +63,11 @@ class MemberSubscriptionController extends GetxController {
         availablePlans.value = plansList
             .map((e) => MembershipPlanModel.fromJson(e))
             .toList();
-      } else {
-        _loadFallbackPlans();
       }
     } catch (e) {
-      _loadFallbackSubscription();
-      _loadFallbackPlans();
+      debugPrint('Error fetching subscription details: $e');
     } finally {
       isLoading.value = false;
-    }
-  }
-
-  void _loadFallbackSubscription() {
-    currentSubscription.value = MemberSubscriptionModel(
-      id: 'sub_101',
-      planName: 'Quarterly Pro',
-      price: 4000.0,
-      durationInMonths: 3,
-      startDate: DateTime.now().subtract(const Duration(days: 15)),
-      endDate: DateTime.now().add(const Duration(days: 75)),
-      status: 'active',
-      features: [
-        'Personalized Workout Plan',
-        'Steam Bath',
-        'Cardio & Weights Access',
-      ],
-    );
-  }
-
-  void _loadFallbackPlans() {
-    if (availablePlans.isEmpty) {
-      availablePlans.value = [
-        MembershipPlanModel(
-          id: '1',
-          name: 'Monthly Starter',
-          price: 1500.0,
-          durationInMonths: 1,
-          features: ['General Trainer', 'Cardio Access', 'Locker Room'],
-        ),
-        MembershipPlanModel(
-          id: '2',
-          name: 'Quarterly Pro',
-          price: 4000.0,
-          durationInMonths: 3,
-          features: [
-            'Personalized Workout Plan',
-            'Steam Bath',
-            'All Equipment Access',
-          ],
-        ),
-        MembershipPlanModel(
-          id: '3',
-          name: 'Annual VIP Elite',
-          price: 12000.0,
-          durationInMonths: 12,
-          features: [
-            'Dedicated Personal Trainer',
-            'Nutrition Plan',
-            'Unlimited Steam & Sauna',
-            'Guest Passes (2/Mo)',
-          ],
-        ),
-      ];
     }
   }
 
@@ -136,20 +83,11 @@ class MemberSubscriptionController extends GetxController {
       if (response.isOk) {
         _showSnackbar('Subscribed!', 'Successfully subscribed to ${plan.name}');
       } else {
-        // Fallback local update for testing
-        currentSubscription.value = MemberSubscriptionModel(
-          id: DateTime.now().millisecondsSinceEpoch.toString(),
-          planName: plan.name,
-          price: plan.price,
-          durationInMonths: plan.durationInMonths,
-          startDate: DateTime.now(),
-          endDate: DateTime.now().add(
-            Duration(days: plan.durationInMonths * 30),
-          ),
-          status: 'active',
-          features: plan.features,
+        _showSnackbar(
+          'Error',
+          response.body?['message'] ?? 'Subscription failed',
+          isError: true,
         );
-        _showSnackbar('Subscribed!', 'Plan activated (Testing Mode).');
       }
       Get.back(); // Close payment modal
       fetchSubscriptionDetails();

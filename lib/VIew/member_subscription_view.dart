@@ -14,7 +14,6 @@ class MemberSubscriptionView extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xFF0F0F12),
       body: Obx(() {
-        // Gate behind gym association
         if (!controller.isAssociatedWithGym.value) {
           return Center(
             child: Padding(
@@ -53,7 +52,6 @@ class MemberSubscriptionView extends StatelessWidget {
           height: MediaQuery.of(context).size.height,
           child: Stack(
             children: [
-              // Ambient Neon Background Globs
               Positioned(
                 top: -60,
                 left: -60,
@@ -78,8 +76,6 @@ class MemberSubscriptionView extends StatelessWidget {
                   ),
                 ),
               ),
-
-              // Background Image Overlay
               Positioned.fill(
                 child: Image.asset(
                   'asset/app_backgrounds/authscreen.jpg',
@@ -89,10 +85,10 @@ class MemberSubscriptionView extends StatelessWidget {
                   colorBlendMode: BlendMode.darken,
                 ),
               ),
-
               SafeArea(
                 child: RefreshIndicator(
-                  onRefresh: () => controller.fetchSubscriptionDetails(),
+                  onRefresh: () async =>
+                      controller.checkGymAssociationAndRefresh(),
                   color: const Color(0xFFFF3B30),
                   child: SingleChildScrollView(
                     padding: const EdgeInsets.symmetric(
@@ -102,7 +98,6 @@ class MemberSubscriptionView extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Header
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -132,9 +127,9 @@ class MemberSubscriptionView extends StatelessWidget {
 
                         const SizedBox(height: 20),
 
-                        // --- 1. CURRENT ACTIVE PLAN CARD ---
+                        // --- 1. CURRENT ACTIVE / TRIAL PLAN CARD ---
                         const Text(
-                          'CURRENT PLAN',
+                          'CURRENT STATUS',
                           style: TextStyle(
                             color: Color(0xFFFF3B30),
                             fontSize: 11,
@@ -159,7 +154,7 @@ class MemberSubscriptionView extends StatelessWidget {
                                   SizedBox(width: 12),
                                   Expanded(
                                     child: Text(
-                                      'No active membership subscription found. Choose a plan below to subscribe.',
+                                      'No active subscription found. Select a gym package below to activate membership.',
                                       style: TextStyle(
                                         color: Colors.white,
                                         fontSize: 13,
@@ -170,6 +165,9 @@ class MemberSubscriptionView extends StatelessWidget {
                               ),
                             );
                           }
+
+                          final isTrial =
+                              sub.status == 'trial' || sub.price == 0;
 
                           return _GlassContainer(
                             padding: const EdgeInsets.all(20),
@@ -195,26 +193,38 @@ class MemberSubscriptionView extends StatelessWidget {
                                         vertical: 4,
                                       ),
                                       decoration: BoxDecoration(
-                                        color: sub.isActive
+                                        color: isTrial
                                             ? const Color(
-                                                0xFF34C759,
+                                                0xFF007AFF,
                                               ).withValues(alpha: 0.2)
-                                            : const Color(
-                                                0xFFFF3B30,
-                                              ).withValues(alpha: 0.2),
+                                            : (sub.isActive
+                                                  ? const Color(
+                                                      0xFF34C759,
+                                                    ).withValues(alpha: 0.2)
+                                                  : const Color(
+                                                      0xFFFF3B30,
+                                                    ).withValues(alpha: 0.2)),
                                         borderRadius: BorderRadius.circular(10),
                                         border: Border.all(
-                                          color: sub.isActive
-                                              ? const Color(0xFF34C759)
-                                              : const Color(0xFFFF3B30),
+                                          color: isTrial
+                                              ? const Color(0xFF007AFF)
+                                              : (sub.isActive
+                                                    ? const Color(0xFF34C759)
+                                                    : const Color(0xFFFF3B30)),
                                         ),
                                       ),
                                       child: Text(
-                                        sub.isActive ? 'ACTIVE' : 'EXPIRED',
+                                        isTrial
+                                            ? 'FREE TRIAL'
+                                            : (sub.isActive
+                                                  ? 'ACTIVE'
+                                                  : 'EXPIRED'),
                                         style: TextStyle(
-                                          color: sub.isActive
-                                              ? const Color(0xFF34C759)
-                                              : const Color(0xFFFF3B30),
+                                          color: isTrial
+                                              ? const Color(0xFF007AFF)
+                                              : (sub.isActive
+                                                    ? const Color(0xFF34C759)
+                                                    : const Color(0xFFFF3B30)),
                                           fontWeight: FontWeight.bold,
                                           fontSize: 10,
                                         ),
@@ -225,11 +235,15 @@ class MemberSubscriptionView extends StatelessWidget {
                                 const SizedBox(height: 8),
 
                                 Text(
-                                  '₹${sub.price.toStringAsFixed(0)} / ${sub.durationInMonths} Mo',
-                                  style: const TextStyle(
+                                  isTrial
+                                      ? 'Free Access'
+                                      : '₹${sub.price.toStringAsFixed(0)} / ${sub.durationInMonths} Mo',
+                                  style: TextStyle(
                                     fontSize: 22,
                                     fontWeight: FontWeight.bold,
-                                    color: Color(0xFFFF3B30),
+                                    color: isTrial
+                                        ? const Color(0xFF007AFF)
+                                        : const Color(0xFFFF3B30),
                                   ),
                                 ),
                                 const SizedBox(height: 12),
@@ -269,7 +283,7 @@ class MemberSubscriptionView extends StatelessWidget {
                                           CrossAxisAlignment.end,
                                       children: [
                                         const Text(
-                                          'Time Remaining',
+                                          'Trial / Plan Remaining',
                                           style: TextStyle(
                                             color: Color(0xFFA1A1AA),
                                             fontSize: 11,
@@ -316,6 +330,21 @@ class MemberSubscriptionView extends StatelessWidget {
                             );
                           }
 
+                          if (controller.availablePlans.isEmpty) {
+                            return _GlassContainer(
+                              padding: const EdgeInsets.all(20),
+                              child: const Center(
+                                child: Text(
+                                  'No custom plans uploaded by your gym owner yet.',
+                                  style: TextStyle(
+                                    color: Color(0xFFA1A1AA),
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ),
+                            );
+                          }
+
                           return ListView.separated(
                             shrinkWrap: true,
                             physics: const NeverScrollableScrollPhysics(),
@@ -347,7 +376,6 @@ class MemberSubscriptionView extends StatelessWidget {
     );
   }
 
-  // --- PAYMENT / SUBSCRIBE MODAL SHEET ---
   void _showPaymentBottomSheet(
     BuildContext context,
     MemberSubscriptionController controller,
@@ -390,8 +418,6 @@ class MemberSubscriptionView extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 16),
-
-              // Plan Summary Box
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -436,7 +462,6 @@ class MemberSubscriptionView extends StatelessWidget {
                   ],
                 ),
               ),
-
               const SizedBox(height: 20),
               const Text(
                 'Select Payment Method',
@@ -447,7 +472,6 @@ class MemberSubscriptionView extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 12),
-
               Obx(
                 () => Column(
                   children:
@@ -479,10 +503,7 @@ class MemberSubscriptionView extends StatelessWidget {
                           .toList(),
                 ),
               ),
-
               const SizedBox(height: 20),
-
-              // Action Button
               Obx(
                 () => SizedBox(
                   width: double.infinity,
@@ -526,7 +547,6 @@ class MemberSubscriptionView extends StatelessWidget {
   }
 }
 
-// Reusable Glassmorphism Container
 class _GlassContainer extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry? padding;
@@ -565,7 +585,6 @@ class _GlassContainer extends StatelessWidget {
   }
 }
 
-// Plan Item Card
 class _PlanItemCard extends StatelessWidget {
   final MembershipPlanModel plan;
   final VoidCallback onSubscribe;
@@ -610,7 +629,6 @@ class _PlanItemCard extends StatelessWidget {
           const SizedBox(height: 12),
           Divider(color: Colors.white.withValues(alpha: 0.12)),
           const SizedBox(height: 8),
-
           Column(
             children: plan.features
                 .map(
@@ -637,7 +655,6 @@ class _PlanItemCard extends StatelessWidget {
                 )
                 .toList(),
           ),
-
           const SizedBox(height: 16),
           SizedBox(
             width: double.infinity,

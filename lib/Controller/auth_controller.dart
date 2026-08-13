@@ -32,7 +32,11 @@ class AuthController extends GetxController {
 
     if (emailController.text.trim().isEmpty ||
         passwordController.text.trim().isEmpty) {
-      _showSnackbar('Error', 'Please fill in required credentials', isError: true);
+      _showSnackbar(
+        'Error',
+        'Please fill in required credentials',
+        isError: true,
+      );
       return;
     }
 
@@ -70,22 +74,39 @@ class AuthController extends GetxController {
       isLoading.value = false;
 
       if (response.isOk && response.body != null) {
-        final body = response.body;
-        // Safely extract data block whether it's wrapped in 'data' or top-level
-        final Map<String, dynamic> data = body['data'] ?? body;
-        final String? token = data['accessToken'];
-        final Map<String, dynamic>? userData = data['user'];
+        final Map<String, dynamic> body = Map<String, dynamic>.from(
+          response.body,
+        );
 
-        if (token != null && userData != null) {
+        // Safe extraction from root or nested 'data' key
+        final Map<String, dynamic> data = body['data'] is Map
+            ? Map<String, dynamic>.from(body['data'])
+            : body;
+
+        final String? token =
+            body['accessToken'] ??
+            body['token'] ??
+            data['accessToken'] ??
+            data['token'];
+
+        final Map<String, dynamic>? userData = body['user'] is Map
+            ? Map<String, dynamic>.from(body['user'])
+            : (data['user'] is Map
+                  ? Map<String, dynamic>.from(data['user'])
+                  : null);
+
+        if (token != null && token.isNotEmpty && userData != null) {
           final returnedRole = userData['role'];
 
           // Role Verification Check
-          final String expectedRole =
-              role == UserRole.gymOwner ? 'gym_owner' : 'gym_member';
+          final String expectedRole = role == UserRole.gymOwner
+              ? 'gym_owner'
+              : 'gym_member';
 
           if (returnedRole != expectedRole) {
-            final String correctPersona =
-                returnedRole == 'gym_owner' ? 'Gym Owner' : 'Gym Member';
+            final String correctPersona = returnedRole == 'gym_owner'
+                ? 'Gym Owner'
+                : 'Gym Member';
 
             _showSnackbar(
               'Access Denied',
@@ -95,12 +116,21 @@ class AuthController extends GetxController {
             return;
           }
 
-          // Save accessToken, refreshToken, user, and qr details centrally
-          _apiService.saveAuthPayload(data);
+          // Construct complete payload for ApiService local storage
+          final Map<String, dynamic> payloadToSave = {
+            'accessToken': token,
+            'refreshToken': body['refreshToken'] ?? data['refreshToken'],
+            'user': userData,
+            'gym': body['gym'] ?? data['gym'],
+            'qr': body['qr'] ?? data['qr'],
+          };
+
+          _apiService.saveAuthPayload(payloadToSave);
+
           if (Get.isRegistered<SocketService>()) {
             Get.find<SocketService>().joinUserRoom();
           }
-          
+
           // Update current user state
           currentUser.value = UserModel.fromJson(userData);
 
@@ -120,7 +150,11 @@ class AuthController extends GetxController {
             }
           }
         } else {
-          _showSnackbar('Error', 'Invalid token or user data received', isError: true);
+          _showSnackbar(
+            'Error',
+            'Invalid token or user data received',
+            isError: true,
+          );
         }
       } else {
         final errorMsg = response.body?['message'] ?? 'Authentication failed';
@@ -129,7 +163,11 @@ class AuthController extends GetxController {
     } catch (e) {
       isLoading.value = false;
       debugPrint('[AUTH EXCEPTION] Error: $e');
-      _showSnackbar('Error', 'Something went wrong. Check connection.', isError: true);
+      _showSnackbar(
+        'Error',
+        'Something went wrong. Check connection.',
+        isError: true,
+      );
     }
   }
 
@@ -144,7 +182,7 @@ class AuthController extends GetxController {
       borderWidth: 1,
     );
   }
-  
+
   @override
   void onClose() {
     emailController.dispose();

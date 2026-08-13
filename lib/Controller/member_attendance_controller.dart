@@ -6,7 +6,8 @@ import 'package:kavachx/Model/attendance_history_model.dart';
 class MemberAttendanceController extends GetxController {
   final ApiService _apiService = Get.find<ApiService>();
 
-  RxList<AttendanceHistoryModel> attendanceRecords = <AttendanceHistoryModel>[].obs;
+  RxList<AttendanceHistoryModel> attendanceRecords =
+      <AttendanceHistoryModel>[].obs;
   RxBool isLoading = true.obs;
   RxInt currentPage = 1.obs;
   RxBool hasMore = true.obs;
@@ -16,18 +17,24 @@ class MemberAttendanceController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    _checkGymAssociation();
-    if (isAssociatedWithGym.value) {
-      fetchAttendanceStats();
-      fetchAttendanceHistory();
-    }
+    checkGymAssociationAndRefresh();
   }
 
-  void _checkGymAssociation() {
+  void checkGymAssociationAndRefresh() {
     final userData = _apiService.getUserData();
     if (userData != null) {
-      final gymId = userData['gymId'] ?? userData['gym']?['_id'];
+      final gymId =
+          userData['gymId'] ??
+          userData['gym']?['_id'] ??
+          userData['gym']?['id'];
       isAssociatedWithGym.value = gymId != null && gymId.toString().isNotEmpty;
+    } else {
+      isAssociatedWithGym.value = false;
+    }
+
+    if (isAssociatedWithGym.value) {
+      fetchAttendanceStats();
+      fetchAttendanceHistory(refresh: true);
     }
   }
 
@@ -42,15 +49,22 @@ class MemberAttendanceController extends GetxController {
     }
 
     try {
-      final response = await _apiService.getAttendanceHistory(page: currentPage.value, limit: 20);
-      if (response.isOk && response.body['success'] == true) {
+      final response = await _apiService.getAttendanceHistory(
+        page: currentPage.value,
+        limit: 20,
+      );
+      if (response.isOk &&
+          response.body != null &&
+          response.body['success'] == true) {
         final List<dynamic> data = response.body['data'] ?? [];
-        final List<AttendanceHistoryModel> records = data.map((e) => AttendanceHistoryModel.fromJson(e)).toList();
-        
+        final List<AttendanceHistoryModel> records = data
+            .map((e) => AttendanceHistoryModel.fromJson(e))
+            .toList();
+
         if (records.length < 20) {
           hasMore.value = false;
         }
-        
+
         attendanceRecords.addAll(records);
       }
     } catch (e) {
@@ -70,7 +84,9 @@ class MemberAttendanceController extends GetxController {
   Future<void> fetchAttendanceStats() async {
     try {
       final response = await _apiService.getAttendanceStats();
-      if (response.isOk && response.body['success'] == true) {
+      if (response.isOk &&
+          response.body != null &&
+          response.body['success'] == true) {
         stats.value = response.body['data'] ?? {};
       }
     } catch (e) {
@@ -79,7 +95,6 @@ class MemberAttendanceController extends GetxController {
   }
 
   Future<void> refreshData() async {
-    await fetchAttendanceStats();
-    await fetchAttendanceHistory(refresh: true);
+    checkGymAssociationAndRefresh();
   }
 }
