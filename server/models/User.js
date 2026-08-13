@@ -13,7 +13,13 @@ const userSchema = new mongoose.Schema(
       trim: true,
     },
     password: { type: String, required: true, select: false },
-    phone: { type: String, unique: true, sparse: true, trim: true },
+    phone: {
+      type: String,
+      unique: true,
+      sparse: true,
+      trim: true,
+      default: undefined, // Ensures empty phones aren't stored as null/empty strings
+    },
     refreshToken: { type: String, select: false },
     isActive: { type: Boolean, default: true },
     role: {
@@ -36,7 +42,11 @@ const userSchema = new mongoose.Schema(
     targetWeightKg: Number,
     waterLitres: { type: Number, default: 0 },
     targetWaterLitres: { type: Number, default: 0 },
-    gender: { type: String, enum: ["male", "female", "other", ""], default: "" },
+    gender: {
+      type: String,
+      enum: ["male", "female", "other", ""],
+      default: "",
+    },
     fitnessGoal: String,
     waterIntakeReminder: Boolean,
     waterReminderIntervalHours: Number,
@@ -51,6 +61,17 @@ const userSchema = new mongoose.Schema(
   },
   { timestamps: true },
 );
+
+// Pre-validate hook to clean empty phone strings before Mongo checks indexes
+userSchema.pre("validate", function (next) {
+  if (
+    this.phone !== undefined &&
+    (this.phone === null || this.phone.trim() === "")
+  ) {
+    this.phone = undefined;
+  }
+  next();
+});
 
 userSchema.pre("save", async function () {
   if (!this.isModified("password")) return;
