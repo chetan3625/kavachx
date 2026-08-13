@@ -28,7 +28,7 @@ const serializeUser = (user) => {
 const sendAuthResponse = (res, status, result) => {
   const serializedUser = serializeUser(result.user);
 
-  res.status(status).json({
+  return res.status(status).json({
     success: true,
     accessToken: result.accessToken,
     refreshToken: result.refreshToken,
@@ -50,68 +50,68 @@ const sendAuthResponse = (res, status, result) => {
   });
 };
 
-export const registerOwner = asyncHandler(async (req, res, next) => {
+export const registerOwner = asyncHandler(async (req, res) => {
   const result = await registerOwnerService(req.body);
-  sendAuthResponse(res, 201, result);
+  return sendAuthResponse(res, 201, result);
 });
 
-export const registerMember = asyncHandler(async (req, res, next) => {
+export const registerMember = asyncHandler(async (req, res) => {
   const result = await registerMemberService(req.body);
-  sendAuthResponse(res, 201, result);
+  return sendAuthResponse(res, 201, result);
 });
 
-export const login = asyncHandler(async (req, res, next) => {
+export const login = asyncHandler(async (req, res) => {
   const result = await loginUser(req.body);
-  sendAuthResponse(res, 200, result);
+  return sendAuthResponse(res, 200, result);
 });
 
-export const refresh = asyncHandler(async (req, res, next) => {
+export const refresh = asyncHandler(async (req, res) => {
   const result = await refreshUserToken(req.body.refreshToken);
-  res.status(200).json({
+  return res.status(200).json({
     success: true,
     accessToken: result.accessToken,
     token: result.accessToken,
   });
 });
 
-export const logout = asyncHandler(async (req, res, next) => {
+export const logout = asyncHandler(async (req, res) => {
   await logoutUser(req.user.userId);
-  res.status(200).json({ success: true, message: "Logged out successfully" });
+  return res
+    .status(200)
+    .json({ success: true, message: "Logged out successfully" });
 });
 
-export const getMe = asyncHandler(async (req, res, next) => {
+export const getMe = asyncHandler(async (req, res) => {
   const user = await getCurrentUser(req.user.userId);
   const serializedUser = serializeUser(user);
-  res.status(200).json({
+  return res.status(200).json({
     success: true,
     data: { user: serializedUser },
     user: serializedUser,
   });
 });
 
-export const forgotPassword = asyncHandler(async (req, res, next) => {
+export const forgotPassword = asyncHandler(async (req, res) => {
   await forgotPasswordService(req.body.email);
-  res.status(200).json({ success: true, message: "Password reset email sent" });
+  return res
+    .status(200)
+    .json({ success: true, message: "Password reset email sent" });
 });
 
-
-
-
-
-export const resetPassword = asyncHandler(async (req, res, next) => {
+export const resetPassword = asyncHandler(async (req, res) => {
   await resetPasswordService(req.params.token, req.body.password);
-  res
+  return res
     .status(200)
     .json({ success: true, message: "Password reset successfully" });
 });
 
-export const changePassword = asyncHandler(async (req, res, next) => {
+export const changePassword = asyncHandler(async (req, res) => {
   await changePasswordService(
     req.user.userId,
     req.body.oldPassword,
     req.body.newPassword,
   );
-  res
+  return res
     .status(200)
     .json({ success: true, message: "Password changed successfully" });
 });
