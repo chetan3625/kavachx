@@ -50,22 +50,22 @@ const sendAuthResponse = (res, status, result) => {
   });
 };
 
-export const registerOwner = asyncHandler(async (req, res) => {
+export const registerOwner = asyncHandler(async (req, res, next) => {
   const result = await registerOwnerService(req.body);
   return sendAuthResponse(res, 201, result);
 });
 
-export const registerMember = asyncHandler(async (req, res) => {
+export const registerMember = asyncHandler(async (req, res, next) => {
   const result = await registerMemberService(req.body);
   return sendAuthResponse(res, 201, result);
 });
 
-export const login = asyncHandler(async (req, res) => {
+export const login = asyncHandler(async (req, res, next) => {
   const result = await loginUser(req.body);
   return sendAuthResponse(res, 200, result);
 });
 
-export const refresh = asyncHandler(async (req, res) => {
+export const refresh = asyncHandler(async (req, res, next) => {
   const result = await refreshUserToken(req.body.refreshToken);
   return res.status(200).json({
     success: true,
@@ -74,14 +74,14 @@ export const refresh = asyncHandler(async (req, res) => {
   });
 });
 
-export const logout = asyncHandler(async (req, res) => {
+export const logout = asyncHandler(async (req, res, next) => {
   await logoutUser(req.user.userId);
   return res
     .status(200)
     .json({ success: true, message: "Logged out successfully" });
 });
 
-export const getMe = asyncHandler(async (req, res) => {
+export const getMe = asyncHandler(async (req, res, next) => {
   const user = await getCurrentUser(req.user.userId);
   const serializedUser = serializeUser(user);
   return res.status(200).json({
@@ -91,21 +91,21 @@ export const getMe = asyncHandler(async (req, res) => {
   });
 });
 
-export const forgotPassword = asyncHandler(async (req, res) => {
+export const forgotPassword = asyncHandler(async (req, res, next) => {
   await forgotPasswordService(req.body.email);
   return res
     .status(200)
     .json({ success: true, message: "Password reset email sent" });
 });
 
-export const resetPassword = asyncHandler(async (req, res) => {
+export const resetPassword = asyncHandler(async (req, res, next) => {
   await resetPasswordService(req.params.token, req.body.password);
   return res
     .status(200)
     .json({ success: true, message: "Password reset successfully" });
 });
 
-export const changePassword = asyncHandler(async (req, res) => {
+export const changePassword = asyncHandler(async (req, res, next) => {
   await changePasswordService(
     req.user.userId,
     req.body.oldPassword,
