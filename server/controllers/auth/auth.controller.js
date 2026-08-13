@@ -1,4 +1,5 @@
 import asyncHandler from "../../utils/AsyncHandler.js";
+import Gym from "../../models/Gym.js";
 import {
   changePasswordService,
   forgotPasswordService,
@@ -84,10 +85,22 @@ export const logout = asyncHandler(async (req, res, next) => {
 export const getMe = asyncHandler(async (req, res, next) => {
   const user = await getCurrentUser(req.user.userId);
   const serializedUser = serializeUser(user);
+
+  let gym = null;
+  if (user.role === "gym_owner") {
+    gym = await Gym.findOne({ ownerId: user._id });
+  } else if (user.gymId) {
+    gym = await Gym.findById(user.gymId);
+  }
+
   return res.status(200).json({
     success: true,
-    data: { user: serializedUser },
+    data: {
+      user: serializedUser,
+      gym: gym || null,
+    },
     user: serializedUser,
+    gym: gym || null,
   });
 });
 

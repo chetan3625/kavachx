@@ -63,14 +63,13 @@ const userSchema = new mongoose.Schema(
 );
 
 // Pre-validate hook to clean empty phone strings before Mongo checks indexes
-userSchema.pre("validate", function (next) {
+userSchema.pre("validate", function () {
   if (
     this.phone !== undefined &&
-    (this.phone === null || this.phone.trim() === "")
+    (this.phone === null || (typeof this.phone === "string" && this.phone.trim() === ""))
   ) {
     this.phone = undefined;
   }
-  next();
 });
 
 userSchema.pre("save", async function () {

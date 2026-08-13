@@ -78,7 +78,22 @@ export const loginUser = async ({ email, password }) => {
 
   await user.save({ validateBeforeSave: false });
 
-  return { user, accessToken, refreshToken };
+  let gym = null;
+  if (user.role === "gym_owner") {
+    gym = await Gym.findOne({ ownerId: user._id });
+  } else if (user.gymId) {
+    gym = await Gym.findById(user.gymId);
+  }
+
+  return {
+    user,
+    accessToken,
+    refreshToken,
+    gym,
+    gymToken: gym?.gymToken,
+    joinUrl: gym ? `https://kavachx.com/join/${gym.gymToken}` : null,
+    qrUrl: gym?.qrUrl,
+  };
 };
 
 export const refreshUserToken = async (refreshToken) => {
@@ -276,6 +291,7 @@ export const forgotPasswordService = async (email) => {
       message,
     });
   } catch (error) {
+    console.error("Failed to send reset password email via SMTP:", error);
     user.resetPasswordToken = undefined;
     user.resetPasswordExpire = undefined;
     await user.save({ validateBeforeSave: false });
