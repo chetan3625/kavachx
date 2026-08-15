@@ -5,11 +5,13 @@ import 'package:kavachx/Services/api_service.dart';
 class OwnerMembersController extends GetxController {
   final ApiService _apiService = Get.find<ApiService>();
 
-  RxList<Map<String, dynamic>> allMembers = <Map<String, dynamic>>[].obs;
-  RxList<Map<String, dynamic>> filteredMembers = <Map<String, dynamic>>[].obs;
-  RxBool isLoading = true.obs;
+  final RxList<Map<String, dynamic>> members = <Map<String, dynamic>>[].obs;
+  final RxBool isLoading = false.obs;
+  final RxString search = ''.obs;
 
-  final TextEditingController searchController = TextEditingController();
+  // --- ALIAS GETTERS TO SATISFY ALL VIEW REFERENCES ---
+  RxList<Map<String, dynamic>> get membersList => members;
+  RxString get searchQuery => search;
 
   @override
   void onInit() {
@@ -21,39 +23,35 @@ class OwnerMembersController extends GetxController {
     isLoading.value = true;
     try {
       final response = await _apiService.get('/gyms/members');
-      if (response.isOk &&
-          response.body != null &&
-          response.body['success'] == true) {
-        final List<dynamic> rawData = response.body['data'] ?? [];
-        allMembers.value = List<Map<String, dynamic>>.from(rawData);
-        filteredMembers.value = allMembers;
+      if (response.isOk && response.body != null) {
+        final List data = response.body['data'] ?? [];
+        members.value = data.map((e) => Map<String, dynamic>.from(e)).toList();
       } else {
-        Get.snackbar(
-          'Notice',
-          response.body?['message'] ?? 'Failed to load members',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: const Color(0xFF1C1C22),
-          colorText: Colors.white,
-        );
+        members.clear();
       }
     } catch (e) {
-      debugPrint('Error fetching gym members: $e');
+      debugPrint('[OwnerMembersController] Error fetching members: $e');
+      members.clear();
     } finally {
       isLoading.value = false;
     }
   }
 
-  void filterMembers(String query) {
-    if (query.trim().isEmpty) {
-      filteredMembers.value = allMembers;
-      return;
+  // Alias method
+  Future<void> fetchGymMembers() async => fetchMembers();
+
+  List<Map<String, dynamic>> get filteredMembers {
+    final query = search.value.trim().toLowerCase();
+    if (query.isEmpty) {
+      return members;
     }
-    final q = query.toLowerCase();
-    filteredMembers.value = allMembers.where((m) {
+    return members.where((m) {
       final name = (m['name'] ?? '').toString().toLowerCase();
       final phone = (m['phone'] ?? '').toString().toLowerCase();
       final email = (m['email'] ?? '').toString().toLowerCase();
-      return name.contains(q) || phone.contains(q) || email.contains(q);
+      return name.contains(query) ||
+          phone.contains(query) ||
+          email.contains(query);
     }).toList();
   }
 }

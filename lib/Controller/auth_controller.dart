@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:kavachx/Constants/user_role.dart';
 import 'package:kavachx/Model/usr_model.dart';
 import 'package:kavachx/Services/api_service.dart';
+import 'package:kavachx/Services/firebase_messaging_service.dart';
 import 'package:kavachx/Services/socket_service.dart';
 
 class AuthController extends GetxController {
@@ -126,6 +127,10 @@ class AuthController extends GetxController {
           };
 
           _apiService.saveAuthPayload(payloadToSave);
+
+          if (Get.isRegistered<FirebaseMessagingService>()) {
+            Get.find<FirebaseMessagingService>().syncToken();
+          }
 
           if (Get.isRegistered<SocketService>()) {
             Get.find<SocketService>().joinUserRoom();

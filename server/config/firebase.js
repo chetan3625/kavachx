@@ -31,6 +31,14 @@ export const sendPushNotification = async (fcmToken, title, body, data = {}) => 
     token: fcmToken,
     notification: { title, body },
     data: { ...data, click_action: "FLUTTER_NOTIFICATION_CLICK" },
+    android: {
+      priority: "high",
+      notification: {
+        channelId: "high_importance_channel",
+        sound: "default",
+        priority: "max",
+      },
+    },
   };
 
   try {
@@ -50,6 +58,14 @@ export const sendMultiplePushNotifications = async (fcmTokens, title, body, data
     tokens: fcmTokens,
     notification: { title, body },
     data: { ...data, click_action: "FLUTTER_NOTIFICATION_CLICK" },
+    android: {
+      priority: "high",
+      notification: {
+        channelId: "high_importance_channel",
+        sound: "default",
+        priority: "max",
+      },
+    },
   };
 
   try {

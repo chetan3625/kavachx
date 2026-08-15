@@ -1,10 +1,20 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get/get.dart';
 import 'package:kavachx/Services/api_service.dart';
 
 class FirebaseMessagingService extends GetxService {
   final FirebaseMessaging _messaging = FirebaseMessaging.instance;
+  final FlutterLocalNotificationsPlugin _localNotifications =
+      FlutterLocalNotificationsPlugin();
+
+  static const AndroidNotificationChannel _channel = AndroidNotificationChannel(
+    'high_importance_channel',
+    'High Importance Notifications',
+    description: 'This channel is used for important announcements.',
+    importance: Importance.max,
+  );
 
   Future<FirebaseMessagingService> init() async {
     // Request notification permissions
@@ -17,10 +27,35 @@ class FirebaseMessagingService extends GetxService {
 
     debugPrint('[FCM] Permission status: ${settings.authorizationStatus}');
 
+    // Force Foreground Presentation Options
+    await _messaging.setForegroundNotificationPresentationOptions(
+      alert: true,
+      badge: true,
+      sound: true,
+    );
+
+    // Setup Local Notifications & Android Channel
+    await _localNotifications
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationPlugin>()
+        ?.createNotificationChannel(_channel);
+
+    const initializationSettings = InitializationSettings(
+      android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+      iOS: DarwinInitializationSettings(),
+    );
+
+    await _localNotifications.initialize(
+      initializationSettings,
+      onDidReceiveNotificationResponse: (details) {
+        debugPrint('[FCM CLICK] Payload: ${details.payload}');
+      },
+    );
+
     if (settings.authorizationStatus == AuthorizationStatus.authorized ||
         settings.authorizationStatus == AuthorizationStatus.provisional) {
       // Get and save FCM token
-      await _getAndSaveToken();
+      await syncToken();
 
       // Listen for token refresh
       _messaging.onTokenRefresh.listen(_saveTokenToServer);
@@ -35,10 +70,15 @@ class FirebaseMessagingService extends GetxService {
     return this;
   }
 
+  /// Public helper to sync FCM token with backend when user logs in or app launches
+  Future<void> syncToken() async {
+    await _getAndSaveToken();
+  }
+
   Future<void> _getAndSaveToken() async {
     try {
       final token = await _messaging.getToken();
-      if (token != null) {
+      if (token != null && token.isNotEmpty) {
         debugPrint('[FCM] Token: $token');
         await _saveTokenToServer(token);
       }
@@ -52,7 +92,7 @@ class FirebaseMessagingService extends GetxService {
       final apiService = Get.find<ApiService>();
       if (apiService.isLoggedIn()) {
         await apiService.updateFcmToken(token);
-        debugPrint('[FCM] Token saved to server');
+        debugPrint('[FCM] Token saved to server successfully');
       }
     } catch (e) {
       debugPrint('[FCM] Error saving token: $e');
@@ -62,10 +102,27 @@ class FirebaseMessagingService extends GetxService {
   void _handleForegroundMessage(RemoteMessage message) {
     debugPrint('[FCM] Foreground message: ${message.notification?.title}');
 
-    if (message.notification != null) {
+    final notification = message.notification;
+    if (notification != null) {
+      _localNotifications.show(
+        notification.hashCode,
+        notification.title,
+        notification.body,
+        NotificationDetails(
+          android: AndroidNotificationDetails(
+            _channel.id,
+            _channel.name,
+            channelDescription: _channel.description,
+            importance: Importance.max,
+            priority: Priority.high,
+            icon: '@mipmap/ic_launcher',
+          ),
+        ),
+      );
+
       Get.snackbar(
-        message.notification!.title ?? 'Notification',
-        message.notification!.body ?? '',
+        notification.title ?? 'Notification',
+        notification.body ?? '',
         snackPosition: SnackPosition.TOP,
         backgroundColor: const Color(0xFF1C1C22),
         colorText: Colors.white,
@@ -81,8 +138,8 @@ class FirebaseMessagingService extends GetxService {
   void _handleMessageOpenedApp(RemoteMessage message) {
     debugPrint('[FCM] Message opened app: ${message.data}');
     final type = message.data['type'];
-    if (type == 'water_reminder' || type == 'general') {
-      // Navigate to notifications tab
+    if (type == 'water_reminder' || type == 'general' || type == 'announcement') {
+      // Navigate to notifications tab if needed
     }
   }
 }

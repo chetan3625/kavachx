@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:kavachx/Services/api_service.dart';
+import 'package:kavachx/Services/firebase_messaging_service.dart';
 
 class SplashController extends GetxController {
   final ApiService _apiService = Get.find<ApiService>();
@@ -15,6 +16,11 @@ class SplashController extends GetxController {
     await Future.delayed(const Duration(milliseconds: 2000));
 
     if (_apiService.isLoggedIn()) {
+      // Sync FCM token upon auto-login
+      if (Get.isRegistered<FirebaseMessagingService>()) {
+        Get.find<FirebaseMessagingService>().syncToken();
+      }
+
       // Refresh fresh user data & gym association from server on launch
       try {
         final response = await _apiService.getMe();

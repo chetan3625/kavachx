@@ -3,22 +3,19 @@ import 'package:get/get.dart';
 import 'package:kavachx/Model/member_plan_model.dart';
 import 'package:kavachx/Services/api_service.dart';
 
-class MembershipPlansController extends GetxController {
+class MembershipPlanController extends GetxController {
   final ApiService _apiService = Get.find<ApiService>();
 
-  RxList<MembershipPlanModel> plans = <MembershipPlanModel>[].obs;
-  RxBool isLoading = true.obs;
-  RxBool isSubmitting = false.obs;
+  final RxList<MembershipPlanModel> plansList = <MembershipPlanModel>[].obs;
+  final RxBool isLoading = false.obs;
+  final RxBool isSubmitting = false.obs;
 
-  bool isEditing = false;
-  String? editingPlanId;
-
+  // Form Controllers
   final nameController = TextEditingController();
   final priceController = TextEditingController();
   final durationController = TextEditingController();
   final featureInputController = TextEditingController();
-
-  RxList<String> currentFeatures = <String>[].obs;
+  final RxList<String> currentFeatures = <String>[].obs;
 
   @override
   void onInit() {
@@ -29,41 +26,21 @@ class MembershipPlansController extends GetxController {
   Future<void> fetchPlans() async {
     isLoading.value = true;
     try {
-      final response = await _apiService.get('/gyms/plans');
-      if (response.isOk &&
-          response.body is Map &&
-          response.body['success'] == true) {
-        final List<dynamic> rawData = response.body['data'] ?? [];
-        plans.value = rawData
+      final response = await _apiService.getMembershipPlans();
+      if (response.isOk && response.body != null) {
+        final List data = response.body['data'] ?? [];
+        plansList.value = data
             .map((e) => MembershipPlanModel.fromJson(e))
             .toList();
       } else {
-        debugPrint('Failed to load plans: ${response.statusCode}');
+        plansList.clear();
       }
     } catch (e) {
-      debugPrint('Error fetching membership plans: $e');
+      debugPrint('[MembershipPlanController] Error fetching plans: $e');
+      plansList.clear();
     } finally {
       isLoading.value = false;
     }
-  }
-
-  void clearForm() {
-    isEditing = false;
-    editingPlanId = null;
-    nameController.clear();
-    priceController.clear();
-    durationController.clear();
-    featureInputController.clear();
-    currentFeatures.clear();
-  }
-
-  void prepareEditForm(MembershipPlanModel plan) {
-    isEditing = true;
-    editingPlanId = plan.id;
-    nameController.text = plan.name;
-    priceController.text = plan.price.toStringAsFixed(0);
-    durationController.text = plan.durationInMonths.toString();
-    currentFeatures.value = List<String>.from(plan.features);
   }
 
   void addFeature() {
@@ -80,72 +57,101 @@ class MembershipPlansController extends GetxController {
     }
   }
 
-  Future<bool> savePlan() async {
-    if (nameController.text.trim().isEmpty ||
-        priceController.text.trim().isEmpty ||
-        durationController.text.trim().isEmpty) {
-      Get.snackbar(
-        'Validation Error',
-        'Please fill in plan name, price, and duration.',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: const Color(0xFF1C1C22),
-        colorText: Colors.white,
+  void clearForm() {
+    nameController.clear();
+    priceController.clear();
+    durationController.clear();
+    featureInputController.clear();
+    currentFeatures.clear();
+  }
+
+  Future<void> createPlan() async {
+    final String name = nameController.text.trim();
+    final double? price = double.tryParse(priceController.text.trim());
+    final int? duration = int.tryParse(durationController.text.trim());
+
+    if (name.isEmpty) {
+      _showSnackbar('Error', 'Please enter a plan name', isError: true);
+      return;
+    }
+    if (price == null || price < 0) {
+      _showSnackbar(
+        'Error',
+        'Please enter a valid non-negative price',
+        isError: true,
       );
-      return false;
+      return;
+    }
+    if (duration == null || duration < 1) {
+      _showSnackbar(
+        'Error',
+        'Please enter a valid duration in months (min 1)',
+        isError: true,
+      );
+      return;
     }
 
     isSubmitting.value = true;
+
     try {
-      final body = {
-        'name': nameController.text.trim(),
-        'price': double.tryParse(priceController.text.trim()) ?? 0.0,
-        'durationInMonths': int.tryParse(durationController.text.trim()) ?? 1,
-        'features': currentFeatures,
-      };
+      final response = await _apiService.createMembershipPlan(
+        name: name,
+        price: price,
+        durationInMonths: duration,
+        features: currentFeatures.isNotEmpty
+            ? currentFeatures
+            : ['Full Gym Access'],
+      );
 
-      Response response;
-      if (isEditing && editingPlanId != null) {
-        response = await _apiService.put('/gyms/plans/$editingPlanId', body);
-      } else {
-        response = await _apiService.post('/gyms/plans', body);
-      }
-
-      if (response.isOk &&
-          response.body is Map &&
-          response.body['success'] == true) {
-        await fetchPlans();
+      if (response.isOk) {
+        _showSnackbar('Success 🎉', 'Membership plan created successfully');
         clearForm();
-        return true;
+        await fetchPlans();
       } else {
-        Get.snackbar(
-          'Error',
-          (response.body is Map)
-              ? (response.body['message'] ?? 'Failed to save plan')
-              : 'Failed to save plan',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: const Color(0xFF1C1C22),
-          colorText: Colors.white,
-        );
-        return false;
+        final msg = response.body?['message'] ?? 'Failed to create plan';
+        _showSnackbar('Error', msg, isError: true);
       }
     } catch (e) {
-      debugPrint('Error saving plan: $e');
-      return false;
+      debugPrint('Error creating plan: $e');
+      _showSnackbar('Error', 'Something went wrong. Try again.', isError: true);
     } finally {
       isSubmitting.value = false;
     }
   }
 
-  Future<void> deletePlan(String id) async {
+  Future<void> deletePlan(String planId) async {
     try {
-      final response = await _apiService.delete('/gyms/plans/$id');
-      if (response.isOk &&
-          response.body is Map &&
-          response.body['success'] == true) {
-        plans.removeWhere((p) => p.id == id);
+      final response = await _apiService.deleteMembershipPlan(planId);
+      if (response.isOk) {
+        plansList.removeWhere((p) => p.id == planId);
+        plansList.refresh();
+        _showSnackbar('Deleted', 'Plan removed');
+      } else {
+        _showSnackbar('Error', 'Failed to delete plan', isError: true);
       }
     } catch (e) {
       debugPrint('Error deleting plan: $e');
     }
+  }
+
+  void _showSnackbar(String title, String message, {bool isError = false}) {
+    Get.snackbar(
+      title,
+      message,
+      snackPosition: SnackPosition.BOTTOM,
+      backgroundColor: const Color(0xFF1C1C22),
+      colorText: Colors.white,
+      borderColor: isError ? const Color(0xFFFF3B30) : const Color(0xFF34C759),
+      borderWidth: 1,
+    );
+  }
+
+  @override
+  void onClose() {
+    nameController.dispose();
+    priceController.dispose();
+    durationController.dispose();
+    featureInputController.dispose();
+    super.onClose();
   }
 }

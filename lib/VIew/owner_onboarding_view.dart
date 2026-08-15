@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:kavachx/Controller/owner_members_controller.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class OwnerMembersView extends StatelessWidget {
   const OwnerMembersView({super.key});
@@ -10,216 +11,331 @@ class OwnerMembersView extends StatelessWidget {
   Widget build(BuildContext context) {
     final controller = Get.put(OwnerMembersController());
 
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
+    return RefreshIndicator(
+      color: const Color(0xFFFF3B30),
+      backgroundColor: const Color(0xFF1C1C22),
+      onRefresh: () async => controller.fetchGymMembers(),
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header Row (Fixed with Expanded to prevent overflow)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: const [
                       Text(
                         'Gym Members',
                         style: TextStyle(
-                          fontSize: 24,
+                          fontSize: 22,
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
                         ),
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      SizedBox(height: 4),
+                      SizedBox(height: 2),
                       Text(
-                        'Manage active gym members & subscriptions',
+                        'Active roster & member management',
                         style: TextStyle(
-                          fontSize: 13,
                           color: Color(0xFFA1A1AA),
+                          fontSize: 13,
                         ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
-                  IconButton(
-                    icon: const Icon(
-                      Icons.refresh_rounded,
-                      color: Colors.white,
+                ),
+                Obx(
+                  () => Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
                     ),
-                    onPressed: () => controller.fetchMembers(),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFF3B30).withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: const Color(0xFFFF3B30).withValues(alpha: 0.30),
+                      ),
+                    ),
+                    child: Text(
+                      '${controller.membersList.length} Active',
+                      style: const TextStyle(
+                        color: Color(0xFFFF3B30),
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
-                ],
-              ),
-              const SizedBox(height: 16),
+                ),
+              ],
+            ),
 
-              // Search Input Bar
-              TextField(
-                controller: controller.searchController,
-                onChanged: controller.filterMembers,
+            const SizedBox(height: 20),
+
+            // Search & Filter Box
+            _GlassContainer(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              borderRadius: 16,
+              child: TextField(
+                onChanged: (val) => controller.searchQuery.value = val,
                 style: const TextStyle(color: Colors.white, fontSize: 14),
-                decoration: InputDecoration(
-                  hintText: 'Search by name, email or phone...',
-                  hintStyle: const TextStyle(color: Color(0xFF71717A)),
-                  prefixIcon: const Icon(
-                    Icons.search_rounded,
-                    color: Color(0xFFA1A1AA),
-                  ),
-                  filled: true,
-                  fillColor: const Color(0xFF1C1C22),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: BorderSide.none,
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                decoration: const InputDecoration(
+                  hintText: 'Search by name or phone...',
+                  hintStyle: TextStyle(color: Color(0xFFA1A1AA), fontSize: 13),
+                  icon: Icon(Icons.search_rounded, color: Color(0xFFA1A1AA)),
+                  border: InputBorder.none,
                 ),
               ),
-              const SizedBox(height: 20),
+            ),
 
-              // Members List
-              Expanded(
-                child: Obx(() {
-                  if (controller.isLoading.value) {
-                    return const Center(
-                      child: CircularProgressIndicator(
-                        color: Color(0xFFFF3B30),
-                      ),
-                    );
-                  }
+            const SizedBox(height: 20),
 
-                  if (controller.filteredMembers.isEmpty) {
-                    return Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: const [
-                          Icon(
-                            Icons.people_outline_rounded,
-                            size: 56,
-                            color: Color(0xFF3F3F46),
+            // Members Roster List
+            Obx(() {
+              if (controller.isLoading.value) {
+                return const Padding(
+                  padding: EdgeInsets.all(40.0),
+                  child: Center(
+                    child: CircularProgressIndicator(color: Color(0xFFFF3B30)),
+                  ),
+                );
+              }
+
+              final filteredMembers = controller.filteredMembers;
+
+              if (filteredMembers.isEmpty) {
+                return _GlassContainer(
+                  padding: const EdgeInsets.all(32),
+                  child: Center(
+                    child: Column(
+                      children: const [
+                        Icon(
+                          Icons.people_outline_rounded,
+                          color: Color(0xFFA1A1AA),
+                          size: 48,
+                        ),
+                        SizedBox(height: 12),
+                        Text(
+                          'No Gym Members Found',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
                           ),
-                          SizedBox(height: 12),
-                          Text(
-                            'No Active Members Found',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          'Approved join requests will appear in this active roster.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Color(0xFFA1A1AA),
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }
+
+              return ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: filteredMembers.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 12),
+                itemBuilder: (context, index) {
+                  final member = filteredMembers[index];
+                  final String name = member['name'] ?? 'Member';
+                  final String phone = member['phone'] ?? '';
+                  final String email = member['email'] ?? '';
+                  final int streakDays = member['streakDays'] ?? 0;
+                  final String goal = member['fitnessGoal'] ?? 'General';
+
+                  return _GlassContainer(
+                    padding: const EdgeInsets.all(16),
+                    borderRadius: 16,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Card Header Row (Safe with Expanded)
+                        Row(
+                          children: [
+                            CircleAvatar(
+                              radius: 22,
+                              backgroundColor: const Color(
+                                0xFFFF3B30,
+                              ).withValues(alpha: 0.2),
+                              child: Text(
+                                name.isNotEmpty ? name[0].toUpperCase() : 'M',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
+                              ),
                             ),
-                          ),
-                          SizedBox(height: 4),
-                          Text(
-                            'Approved join requests will appear here.',
-                            style: TextStyle(
-                              color: Color(0xFFA1A1AA),
-                              fontSize: 12,
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    name,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 15,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    phone.isNotEmpty ? phone : email,
+                                    style: const TextStyle(
+                                      color: Color(0xFFA1A1AA),
+                                      fontSize: 12,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
-                    );
-                  }
+                            if (phone.isNotEmpty)
+                              IconButton(
+                                icon: Container(
+                                  padding: const EdgeInsets.all(6),
+                                  decoration: BoxDecoration(
+                                    color: const Color(
+                                      0xFF34C759,
+                                    ).withValues(alpha: 0.15),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(
+                                    Icons.phone_rounded,
+                                    color: Color(0xFF34C759),
+                                    size: 18,
+                                  ),
+                                ),
+                                onPressed: () async {
+                                  final Uri launchUri = Uri(
+                                    scheme: 'tel',
+                                    path: phone,
+                                  );
+                                  if (await canLaunchUrl(launchUri)) {
+                                    await launchUrl(launchUri);
+                                  }
+                                },
+                                tooltip: 'Call Member',
+                              ),
+                          ],
+                        ),
 
-                  return ListView.separated(
-                    itemCount: controller.filteredMembers.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 12),
-                    itemBuilder: (context, index) {
-                      final member = controller.filteredMembers[index];
-                      return _buildMemberCard(member);
-                    },
+                        const Divider(color: Color(0xFF2C2C35), height: 20),
+
+                        // Stats Badges Row (Safe wrapping)
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Flexible(
+                              child: Row(
+                                children: [
+                                  const Icon(
+                                    Icons.local_fire_department_rounded,
+                                    color: Color(0xFFFF9500),
+                                    size: 16,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Flexible(
+                                    child: Text(
+                                      '$streakDays Day Streak',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Flexible(
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.06),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  'Goal: ${goal.replaceAll('_', ' ').toUpperCase()}',
+                                  style: const TextStyle(
+                                    color: Color(0xFFA1A1AA),
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   );
-                }),
-              ),
-            ],
-          ),
+                },
+              );
+            }),
+          ],
         ),
       ),
     );
   }
+}
 
-  Widget _buildMemberCard(Map<String, dynamic> member) {
-    final String name = member['name'] ?? 'Member';
-    final String phone = member['phone'] ?? 'N/A';
-    final String planName = member['planName'] ?? 'Standard Plan';
-    final String profileImage = member['profileImage'] ?? '';
+class _GlassContainer extends StatelessWidget {
+  final Widget child;
+  final EdgeInsetsGeometry? padding;
+  final double borderRadius;
+  final double opacity;
+  final double borderOpacity;
 
+  const _GlassContainer({
+    required this.child,
+    this.padding,
+    this.borderRadius = 20,
+    this.opacity = 0.08,
+    this.borderOpacity = 0.15,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(borderRadius),
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
         child: Container(
-          padding: const EdgeInsets.all(16),
+          padding: padding,
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.08),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+            color: Colors.white.withValues(alpha: opacity),
+            borderRadius: BorderRadius.circular(borderRadius),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: borderOpacity),
+              width: 1,
+            ),
           ),
-          child: Row(
-            children: [
-              CircleAvatar(
-                radius: 24,
-                backgroundColor: const Color(0xFFFF3B30).withValues(alpha: 0.2),
-                backgroundImage: profileImage.isNotEmpty
-                    ? NetworkImage(profileImage)
-                    : null,
-                child: profileImage.isEmpty
-                    ? Text(
-                        name.isNotEmpty ? name[0].toUpperCase() : 'M',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
-                        ),
-                      )
-                    : null,
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      name,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 15,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      '📞 $phone',
-                      style: const TextStyle(
-                        color: Color(0xFFA1A1AA),
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF34C759).withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: const Color(0xFF34C759).withValues(alpha: 0.3),
-                  ),
-                ),
-                child: Text(
-                  planName,
-                  style: const TextStyle(
-                    color: Color(0xFF34C759),
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ],
-          ),
+          child: child,
         ),
       ),
     );
