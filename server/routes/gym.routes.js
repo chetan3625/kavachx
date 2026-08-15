@@ -7,6 +7,8 @@ import {
   getGymMembers,
   getInactiveMembers,
   getTodayCheckIns,
+  getGymProfile,
+  updateGymProfile,
 } from "../controllers/gyms/gym.controller.js";
 import {
   getPlans,
@@ -60,6 +62,8 @@ router.get(
   authorize("gym_owner"),
   getTodayCheckIns,
 );
+router.get("/profile", protect, authorize("gym_owner"), getGymProfile);
+router.put("/profile", protect, authorize("gym_owner"), updateGymProfile);
 
 // Announcements
 router.post("/announce", protect, authorize("gym_owner"), sendGymAnnouncement);

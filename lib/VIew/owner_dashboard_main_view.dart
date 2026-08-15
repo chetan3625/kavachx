@@ -8,6 +8,7 @@ import 'package:kavachx/VIew/membership_plan_view.dart';
 import 'package:kavachx/VIew/owner_onboarding_view.dart';
 import 'package:kavachx/VIew/owner_send_announcement_dialog.dart';
 import 'package:kavachx/VIew/inactive_members_view.dart';
+import 'package:kavachx/VIew/owner_profile_view.dart';
 
 class OwnerDashboardMainView extends StatelessWidget {
   const OwnerDashboardMainView({super.key});
@@ -73,6 +74,8 @@ class OwnerDashboardMainView extends StatelessWidget {
                     return const JoinRequestsView();
                   case 4:
                     return const InactiveMembersView();
+                  case 5:
+                    return const OwnerProfileView();
                   default:
                     return _buildHomeTab(context, controller);
                 }
@@ -216,25 +219,48 @@ class OwnerDashboardMainView extends StatelessWidget {
                   ),
                 ),
 
-                // Gym QR Code Trigger Button
-                IconButton(
-                  onPressed: () => Get.to(() => const GymQrDisplayView()),
-                  icon: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFF3B30).withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: const Color(0xFFFF3B30).withValues(alpha: 0.30),
+                // Gym QR Code & Profile Buttons
+                Row(
+                  children: [
+                    IconButton(
+                      onPressed: () => Get.to(() => const GymQrDisplayView()),
+                      icon: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFF3B30).withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: const Color(0xFFFF3B30).withValues(alpha: 0.30),
+                          ),
+                        ),
+                        child: const Icon(
+                          Icons.qr_code_2_rounded,
+                          color: Color(0xFFFF3B30),
+                          size: 22,
+                        ),
                       ),
+                      tooltip: 'Show Gym QR',
                     ),
-                    child: const Icon(
-                      Icons.qr_code_2_rounded,
-                      color: Color(0xFFFF3B30),
-                      size: 22,
+                    IconButton(
+                      onPressed: () => Get.to(() => const OwnerProfileView()),
+                      icon: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF007AFF).withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: const Color(0xFF007AFF).withValues(alpha: 0.30),
+                          ),
+                        ),
+                        child: const Icon(
+                          Icons.person_rounded,
+                          color: Color(0xFF007AFF),
+                          size: 22,
+                        ),
+                      ),
+                      tooltip: 'Gym Owner Profile',
                     ),
-                  ),
-                  tooltip: 'Show Gym QR',
+                  ],
                 ),
               ],
             ),

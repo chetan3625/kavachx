@@ -203,3 +203,89 @@ export const getTodayCheckIns = async (req, res, next) => {
     next(error);
   }
 };
+
+export const getGymProfile = async (req, res, next) => {
+  try {
+    const ownerId = req.user.userId;
+    const user = await User.findById(ownerId).select("-password");
+    const gym = await Gym.findOne({ ownerId, isActive: true });
+
+    if (!gym) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Gym profile not found." });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        owner: user,
+        gym: gym,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateGymProfile = async (req, res, next) => {
+  try {
+    const ownerId = req.user.userId;
+    const { ownerName, phone, gymName, gymPhone, gymAddress } = req.body;
+
+    // Check if phone number is taken by another user
+    if (phone) {
+      const existingUser = await User.findOne({ phone, _id: { $ne: ownerId } });
+      if (existingUser) {
+        return res.status(400).json({
+          success: false,
+          message: "Phone number is already registered with another account.",
+        });
+      }
+    }
+
+    // Update User profile details
+    const userUpdates = {};
+    if (ownerName) userUpdates.name = ownerName;
+    if (phone) userUpdates.phone = phone;
+
+    let updatedUser = null;
+    if (Object.keys(userUpdates).length > 0) {
+      updatedUser = await User.findByIdAndUpdate(ownerId, userUpdates, {
+        returnDocument: "after",
+        runValidators: true,
+      }).select("-password");
+    } else {
+      updatedUser = await User.findById(ownerId).select("-password");
+    }
+
+    // Update Gym details
+    const gymUpdates = {};
+    if (gymName) gymUpdates.name = gymName;
+    if (gymPhone) gymUpdates.phone = gymPhone;
+    if (gymAddress) gymUpdates.address = gymAddress;
+
+    let updatedGym = await Gym.findOneAndUpdate(
+      { ownerId, isActive: true },
+      gymUpdates,
+      { returnDocument: "after", runValidators: true },
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Gym profile updated successfully! 🎉",
+      data: {
+        owner: updatedUser,
+        gym: updatedGym,
+      },
+    });
+  } catch (error) {
+    if (error.code === 11000) {
+      return res.status(400).json({
+        success: false,
+        message: "Duplicate field value. Phone number or email already in use.",
+      });
+    }
+    next(error);
+  }
+};

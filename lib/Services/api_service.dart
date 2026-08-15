@@ -473,6 +473,16 @@ class ApiService extends GetConnect {
     return post('/members/onboarding', data);
   }
 
+  // ================= GYM OWNER PROFILE ENDPOINTS =================
+
+  Future<Response> getGymProfile() {
+    return get('/gyms/profile');
+  }
+
+  Future<Response> updateGymProfile(Map<String, dynamic> data) {
+    return put('/gyms/profile', data);
+  }
+
   // ================= FCM TOKEN ENDPOINT =================
 
   Future<Response> updateFcmToken(String token) {
