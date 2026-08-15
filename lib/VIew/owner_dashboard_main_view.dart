@@ -75,7 +75,7 @@ class OwnerDashboardMainView extends StatelessWidget {
                   case 4:
                     return const InactiveMembersView();
                   case 5:
-                    return const OwnerProfileView(isTab: true);
+                    return const OwnerProfileView();
                   default:
                     return _buildHomeTab(context, controller);
                 }
@@ -93,7 +93,7 @@ class OwnerDashboardMainView extends StatelessWidget {
           blur: 16,
           padding: EdgeInsets.zero,
           child: BottomNavigationBar(
-            currentIndex: controller.selectedBottomIndex.value,
+            currentIndex: controller.selectedBottomIndex.value.clamp(0, 5),
             onTap: (index) => controller.selectedBottomIndex.value = index,
             backgroundColor: Colors.transparent,
             elevation: 0,
@@ -144,6 +144,10 @@ class OwnerDashboardMainView extends StatelessWidget {
               const BottomNavigationBarItem(
                 icon: Icon(Icons.person_off_rounded),
                 label: 'Inactive',
+              ),
+              const BottomNavigationBarItem(
+                icon: Icon(Icons.person_rounded),
+                label: 'Profile',
               ),
             ],
           ),
@@ -242,7 +246,7 @@ class OwnerDashboardMainView extends StatelessWidget {
                       tooltip: 'Show Gym QR',
                     ),
                     IconButton(
-                      onPressed: () => Get.to(() => const OwnerProfileView()),
+                      onPressed: () => controller.selectedBottomIndex.value = 5,
                       icon: Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(

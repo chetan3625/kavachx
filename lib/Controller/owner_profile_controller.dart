@@ -39,16 +39,27 @@ class OwnerProfileController extends GetxController {
         phoneController.text = ownerData['phone'] ?? '';
         gymNameController.text = gymData['name'] ?? '';
         gymPhoneController.text = gymData['phone'] ?? '';
-        gymAddressController.text = gymData['address'] ?? '';
+        gymAddressController.text = gymAddressController.text.isNotEmpty
+            ? gymAddressController.text
+            : (gymData['address'] ?? '');
       } else {
-        _showSnackbar(
-          'Error',
-          response.body?['message'] ?? 'Failed to load gym profile',
-          isError: true,
-        );
+        // Fallback to /auth/me
+        final userRes = await _apiService.get('/auth/me');
+        if (userRes.isOk && userRes.body?['success'] == true) {
+          final userData = userRes.body['data']['user'] ?? {};
+          final gym = userRes.body['data']['gym'] ?? {};
+          ownerData.value = Map<String, dynamic>.from(userData);
+          gymData.value = Map<String, dynamic>.from(gym);
+
+          ownerNameController.text = userData['name'] ?? '';
+          phoneController.text = userData['phone'] ?? '';
+          gymNameController.text = gym['name'] ?? '';
+          gymPhoneController.text = gym['phone'] ?? '';
+          gymAddressController.text = gym['address'] ?? '';
+        }
       }
     } catch (e) {
-      _showSnackbar('Error', 'Connection failed: $e', isError: true);
+      debugPrint('Error fetching gym profile: $e');
     } finally {
       isLoading.value = false;
     }
