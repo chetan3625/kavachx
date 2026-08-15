@@ -20,6 +20,18 @@ export const protect = async (req, res, next) => {
   try {
     const decoded = jwt.verify(token, env.JWT_ACCESS_SECRET);
     req.user = decoded; // Contains userId and role
+
+    // Asynchronously update lastActiveAt for the active user without blocking requests
+    if (decoded?.userId) {
+      import("../models/User.js")
+        .then(({ default: User }) => {
+          User.findByIdAndUpdate(decoded.userId, { lastActiveAt: new Date() }).catch(
+            () => {},
+          );
+        })
+        .catch(() => {});
+    }
+
     next();
   } catch (error) {
     return res

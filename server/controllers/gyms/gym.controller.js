@@ -86,19 +86,64 @@ export const getInactiveMembers = async (req, res, next) => {
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - days);
 
-    const inactiveMembers = await User.find({
+    // 1. Get all members belonging to this gym (via User and Membership)
+    const directUsers = await User.find({
       gymId: gym._id,
       role: "gym_member",
-      lastActiveAt: { $lt: cutoffDate },
-    }).select("-password");
+    }).select("_id");
 
-    return res
-      .status(200)
-      .json({
-        success: true,
-        count: inactiveMembers.length,
-        data: inactiveMembers,
+    const { default: Membership } = await import("../../models/Membership.js");
+    const memberships = await Membership.find({
+      gymId: gym._id,
+      status: { $in: ["active", "trial"] },
+    }).select("memberId");
+
+    const memberIds = Array.from(
+      new Set([
+        ...directUsers.map((u) => u._id.toString()),
+        ...memberships.map((m) => m.memberId?.toString()).filter(Boolean),
+      ]),
+    );
+
+    if (memberIds.length === 0) {
+      return res.status(200).json({ success: true, count: 0, data: [] });
+    }
+
+    const { default: Attendance } = await import("../../models/Attendance.js");
+
+    const inactiveMembersList = [];
+
+    for (const mId of memberIds) {
+      const user = await User.findById(mId).select("-password");
+      if (!user) continue;
+
+      // Find latest attendance for member
+      const latestAttendance = await Attendance.findOne({ memberId: mId }).sort({
+        createdAt: -1,
       });
+
+      // Determine member's latest active date (most recent of lastActiveAt or latest check-in)
+      let latestActivity = user.lastActiveAt || user.createdAt;
+      if (latestAttendance && latestAttendance.checkInTime) {
+        const attDate = new Date(latestAttendance.checkInTime);
+        if (attDate > new Date(latestActivity)) {
+          latestActivity = attDate;
+        }
+      }
+
+      if (new Date(latestActivity) < cutoffDate) {
+        inactiveMembersList.push({
+          ...user.toObject(),
+          lastActiveAt: latestActivity,
+        });
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      count: inactiveMembersList.length,
+      data: inactiveMembersList,
+    });
   } catch (error) {
     next(error);
   }
