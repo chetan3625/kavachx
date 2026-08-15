@@ -6,6 +6,7 @@ import {
   rejectRequest,
   getGymMembers,
   getInactiveMembers,
+  getTodayCheckIns,
 } from "../controllers/gyms/gym.controller.js";
 import {
   getPlans,
@@ -52,6 +53,12 @@ router.get(
   protect,
   authorize("gym_owner"),
   getInactiveMembers,
+);
+router.get(
+  "/today-checkins",
+  protect,
+  authorize("gym_owner"),
+  getTodayCheckIns,
 );
 
 // Announcements

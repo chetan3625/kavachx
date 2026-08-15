@@ -79,6 +79,12 @@ class OwnerDashboardController extends GetxController {
         final List<dynamic> inactive = inactiveRes.body['data'] ?? [];
         inactiveMembersCount.value = inactive.length;
       }
+
+      // 5. Fetch Today's Check-ins Count
+      final checkInsRes = await _apiService.get('/gyms/today-checkins');
+      if (checkInsRes.isOk && checkInsRes.body?['success'] == true) {
+        todayCheckInsCount.value = checkInsRes.body['count'] ?? 0;
+      }
     } catch (e) {
       debugPrint('Error fetching owner dashboard stats: $e');
     } finally {

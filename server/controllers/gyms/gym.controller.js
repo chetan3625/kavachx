@@ -103,3 +103,58 @@ export const getInactiveMembers = async (req, res, next) => {
     next(error);
   }
 };
+
+export const getTodayCheckIns = async (req, res, next) => {
+  try {
+    const ownerId = req.user.userId;
+    const gym = await Gym.findOne({ ownerId, isActive: true });
+    if (!gym)
+      return res
+        .status(404)
+        .json({ success: false, message: "Active gym not found." });
+
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const day = String(now.getDate()).padStart(2, "0");
+    const todayStr = `${year}-${month}-${day}`;
+
+    // Find member IDs for this gym
+    const directUsers = await User.find({
+      gymId: gym._id,
+      role: "gym_member",
+    }).select("_id");
+
+    const { default: Membership } = await import("../../models/Membership.js");
+    const memberships = await Membership.find({
+      gymId: gym._id,
+      status: { $in: ["active", "trial"] },
+    }).select("memberId");
+
+    const allMemberIds = Array.from(
+      new Set([
+        ...directUsers.map((u) => u._id.toString()),
+        ...memberships.map((m) => m.memberId?.toString()).filter(Boolean),
+      ]),
+    );
+
+    const { default: Attendance } = await import("../../models/Attendance.js");
+
+    const todayAttendances = await Attendance.find({
+      $or: [
+        { gymId: gym._id, dateString: todayStr },
+        { gymId: gym._id, dateStr: todayStr },
+        { memberId: { $in: allMemberIds }, dateString: todayStr },
+        { memberId: { $in: allMemberIds }, dateStr: todayStr },
+      ],
+    }).populate("memberId", "name email phone profileImage");
+
+    return res.status(200).json({
+      success: true,
+      count: todayAttendances.length,
+      data: todayAttendances,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
