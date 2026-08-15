@@ -61,25 +61,27 @@ class OwnerDashboardMainView extends StatelessWidget {
               ),
             ),
 
-            SafeArea(
-              child: Obx(() {
-                switch (controller.selectedBottomIndex.value) {
-                  case 0:
-                    return _buildHomeTab(context, controller);
-                  case 1:
-                    return const OwnerMembersView();
-                  case 2:
-                    return const MembershipPlansView();
-                  case 3:
-                    return const JoinRequestsView();
-                  case 4:
-                    return const InactiveMembersView();
-                  case 5:
-                    return const OwnerProfileView();
-                  default:
-                    return _buildHomeTab(context, controller);
-                }
-              }),
+            Positioned.fill(
+              child: SafeArea(
+                child: Obx(() {
+                  switch (controller.selectedBottomIndex.value) {
+                    case 0:
+                      return _buildHomeTab(context, controller);
+                    case 1:
+                      return const OwnerMembersView();
+                    case 2:
+                      return const MembershipPlansView();
+                    case 3:
+                      return const JoinRequestsView();
+                    case 4:
+                      return const InactiveMembersView();
+                    case 5:
+                      return const OwnerProfileView();
+                    default:
+                      return _buildHomeTab(context, controller);
+                  }
+                }),
+              ),
             ),
           ],
         ),
