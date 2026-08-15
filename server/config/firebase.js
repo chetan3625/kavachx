@@ -3,27 +3,45 @@ import admin from "firebase-admin";
 // Safe check for ESM compatibility
 if (admin && admin.apps && admin.apps.length === 0) {
   try {
-    if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_CLIENT_EMAIL) {
+    const projectId = process.env.FIREBASE_PROJECT_ID;
+    const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+    const privateKey = process.env.FIREBASE_PRIVATE_KEY;
+
+    if (
+      projectId &&
+      clientEmail &&
+      !clientEmail.includes("xxxxx") &&
+      privateKey &&
+      !privateKey.includes("...")
+    ) {
       admin.initializeApp({
         credential: admin.credential.cert({
-          projectId: process.env.FIREBASE_PROJECT_ID,
-          clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-          privateKey: process.env.FIREBASE_PRIVATE_KEY
-            ? process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, "\n")
-            : undefined,
+          projectId: projectId,
+          clientEmail: clientEmail,
+          privateKey: privateKey.replace(/\\n/g, "\n"),
         }),
       });
       console.log("[Firebase] Admin initialized successfully.");
     } else {
-      console.log("[Firebase] Credentials missing in environment — FCM push skipped.");
+      console.warn(
+        "[Firebase Warning] Placeholder or missing Firebase Service Account credentials in .env. FCM push notifications will fail until valid Firebase Admin credentials are set.",
+      );
     }
   } catch (err) {
-    console.log("[Firebase] Initialization skipped:", err.message);
+    console.error("[Firebase Error] Admin initialization failed:", err.message);
   }
 }
 
 export const sendPushNotification = async (fcmToken, title, body, data = {}) => {
-  if (!admin || !admin.apps || admin.apps.length === 0 || !fcmToken) {
+  if (!admin || !admin.apps || admin.apps.length === 0) {
+    console.error(
+      "[Firebase Error] Cannot send push notification: Firebase Admin is not initialized. Please configure valid FIREBASE_CLIENT_EMAIL and FIREBASE_PRIVATE_KEY in .env.",
+    );
+    return null;
+  }
+
+  if (!fcmToken) {
+    console.warn("[Firebase Warning] FCM token is missing.");
     return null;
   }
 
@@ -42,15 +60,30 @@ export const sendPushNotification = async (fcmToken, title, body, data = {}) => 
   };
 
   try {
-    return await admin.messaging().send(message);
+    const response = await admin.messaging().send(message);
+    console.log("[Firebase Success] Single push sent:", response);
+    return response;
   } catch (error) {
     console.error("[Firebase Error] Single push failed:", error.message);
     return null;
   }
 };
 
-export const sendMultiplePushNotifications = async (fcmTokens, title, body, data = {}) => {
-  if (!admin || !admin.apps || admin.apps.length === 0 || !fcmTokens || fcmTokens.length === 0) {
+export const sendMultiplePushNotifications = async (
+  fcmTokens,
+  title,
+  body,
+  data = {},
+) => {
+  if (!admin || !admin.apps || admin.apps.length === 0) {
+    console.error(
+      "[Firebase Error] Cannot send multicast push notification: Firebase Admin is not initialized. Please configure valid FIREBASE_CLIENT_EMAIL and FIREBASE_PRIVATE_KEY in .env.",
+    );
+    return null;
+  }
+
+  if (!fcmTokens || fcmTokens.length === 0) {
+    console.warn("[Firebase Warning] No target FCM tokens provided.");
     return null;
   }
 
@@ -69,7 +102,21 @@ export const sendMultiplePushNotifications = async (fcmTokens, title, body, data
   };
 
   try {
-    return await admin.messaging().sendEachForMulticast(message);
+    const response = await admin.messaging().sendEachForMulticast(message);
+    console.log(
+      `[Firebase Success] Multicast result: ${response.successCount} succeeded, ${response.failureCount} failed.`,
+    );
+    if (response.failureCount > 0) {
+      response.responses.forEach((resp, idx) => {
+        if (!resp.success) {
+          console.error(
+            `[Firebase Error] Token index ${idx} failed:`,
+            resp.error?.message || resp.error,
+          );
+        }
+      });
+    }
+    return response;
   } catch (error) {
     console.error("[Firebase Error] Multicast push failed:", error.message);
     return null;
