@@ -1,5 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:kavachx/Controller/member_attendance_controller.dart';
+import 'package:kavachx/Controller/member_dashboard_controller.dart';
+import 'package:kavachx/Controller/member_subscription_controller.dart';
+import 'package:kavachx/Controller/membership_plan_controller.dart';
+import 'package:kavachx/Controller/owner_dashboard_controller.dart';
+import 'package:kavachx/Controller/owner_members_controller.dart';
+import 'package:kavachx/Controller/owner_profile_controller.dart';
 import 'package:kavachx/Services/api_service.dart';
 import 'package:kavachx/Services/firebase_messaging_service.dart';
 
@@ -13,7 +20,7 @@ class SplashController extends GetxController {
   }
 
   void _checkAuthAndNavigate() async {
-    await Future.delayed(const Duration(milliseconds: 2000));
+    final Stopwatch stopwatch = Stopwatch()..start();
 
     if (_apiService.isLoggedIn()) {
       // Sync FCM token upon auto-login
@@ -41,6 +48,17 @@ class SplashController extends GetxController {
       final String? role = userData?['role'];
       final bool isOnboarded = userData?['isOnboarded'] ?? false;
 
+      // Pre-warm and fetch all APIs while on splash screen for 60 FPS performance
+      if (role != null) {
+        await _preloadRoleData(role);
+      }
+
+      // Ensure minimum 1.5 second splash display for brand experience
+      final int elapsed = stopwatch.elapsedMilliseconds;
+      if (elapsed < 1500) {
+        await Future.delayed(Duration(milliseconds: 1500 - elapsed));
+      }
+
       if (role == 'gym_owner') {
         Get.offAllNamed('/owner-dashboard');
       } else {
@@ -59,7 +77,38 @@ class SplashController extends GetxController {
         }
       }
     } else {
+      await Future.delayed(const Duration(milliseconds: 1500));
       Get.offAllNamed('/role-selection');
+    }
+  }
+
+  Future<void> _preloadRoleData(String role) async {
+    try {
+      if (role == 'gym_owner') {
+        final ownerDashboard = Get.put(OwnerDashboardController());
+        final ownerMembers = Get.put(OwnerMembersController());
+        final planController = Get.put(MembershipPlanController());
+        final ownerProfile = Get.put(OwnerProfileController());
+
+        await Future.wait([
+          ownerDashboard.fetchDashboardStats(),
+          ownerMembers.fetchGymMembers(),
+          planController.fetchPlans(),
+          ownerProfile.fetchGymProfile(),
+        ]);
+      } else if (role == 'gym_member') {
+        final memberDashboard = Get.put(MemberDashboardController());
+        final memberAttendance = Get.put(MemberAttendanceController());
+        final memberSubscription = Get.put(MemberSubscriptionController());
+
+        await Future.wait([
+          memberDashboard.fetchDashboardData(),
+          memberAttendance.fetchAttendanceHistory(),
+          memberSubscription.fetchSubscriptionDetails(),
+        ]);
+      }
+    } catch (e) {
+      debugPrint('[SplashController] Error preloading APIs on splash: $e');
     }
   }
 }

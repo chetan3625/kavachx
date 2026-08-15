@@ -289,7 +289,16 @@ class _MemberDetailAttendanceViewState
                         const SizedBox(height: 12),
 
                         // HISTORY LIST
-                        if (controller.attendanceHistory.isEmpty)
+                        if (controller.isLoading.value)
+                          const Padding(
+                            padding: EdgeInsets.all(40.0),
+                            child: Center(
+                              child: CircularProgressIndicator(
+                                color: Color(0xFFFF3B30),
+                              ),
+                            ),
+                          )
+                        else if (controller.attendanceHistory.isEmpty)
                           _GlassCard(
                             children: const [
                               Padding(
