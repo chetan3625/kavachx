@@ -1,9 +1,13 @@
-import admin from "firebase-admin";
+import { initializeApp, cert, getApps } from "firebase-admin/app";
+import { getMessaging } from "firebase-admin/messaging";
 import "./env.js"; // Ensures process.env variables are loaded via dotenv before init
 
-const getAdmin = () => {
-  if (admin && admin.apps && admin.apps.length > 0) {
-    return admin;
+let firebaseApp = null;
+
+const getFirebaseApp = () => {
+  const apps = getApps();
+  if (apps.length > 0) {
+    return apps[0];
   }
 
   try {
@@ -23,15 +27,15 @@ const getAdmin = () => {
         formattedKey = formattedKey.replace(/\\n/g, "\n");
       }
 
-      admin.initializeApp({
-        credential: admin.credential.cert({
+      firebaseApp = initializeApp({
+        credential: cert({
           projectId: projectId,
           clientEmail: clientEmail,
           privateKey: formattedKey,
         }),
       });
       console.log("[Firebase] Admin initialized successfully.");
-      return admin;
+      return firebaseApp;
     } else {
       console.warn(
         "[Firebase Warning] Placeholder or missing Firebase Service Account credentials in .env. FCM push notifications will fail until valid Firebase Admin credentials are set in .env.",
@@ -44,11 +48,11 @@ const getAdmin = () => {
 };
 
 // Initial attempt on module load
-getAdmin();
+getFirebaseApp();
 
 export const sendPushNotification = async (fcmToken, title, body, data = {}) => {
-  const firebaseAdmin = getAdmin();
-  if (!firebaseAdmin || !firebaseAdmin.apps || firebaseAdmin.apps.length === 0) {
+  const app = getFirebaseApp();
+  if (!app) {
     console.error(
       "[Firebase Error] Cannot send push notification: Firebase Admin is not initialized. Please check FIREBASE_CLIENT_EMAIL and FIREBASE_PRIVATE_KEY in .env.",
     );
@@ -75,7 +79,8 @@ export const sendPushNotification = async (fcmToken, title, body, data = {}) => 
   };
 
   try {
-    const response = await firebaseAdmin.messaging().send(message);
+    const messaging = getMessaging(app);
+    const response = await messaging.send(message);
     console.log("[Firebase Success] Single push sent:", response);
     return response;
   } catch (error) {
@@ -90,8 +95,8 @@ export const sendMultiplePushNotifications = async (
   body,
   data = {},
 ) => {
-  const firebaseAdmin = getAdmin();
-  if (!firebaseAdmin || !firebaseAdmin.apps || firebaseAdmin.apps.length === 0) {
+  const app = getFirebaseApp();
+  if (!app) {
     console.error(
       "[Firebase Error] Cannot send multicast push notification: Firebase Admin is not initialized. Please check FIREBASE_CLIENT_EMAIL and FIREBASE_PRIVATE_KEY in .env.",
     );
@@ -118,7 +123,8 @@ export const sendMultiplePushNotifications = async (
   };
 
   try {
-    const response = await firebaseAdmin.messaging().sendEachForMulticast(message);
+    const messaging = getMessaging(app);
+    const response = await messaging.sendEachForMulticast(message);
     console.log(
       `[Firebase Success] Multicast result: ${response.successCount} succeeded, ${response.failureCount} failed.`,
     );
@@ -139,4 +145,4 @@ export const sendMultiplePushNotifications = async (
   }
 };
 
-export default admin;
+export default firebaseApp;
