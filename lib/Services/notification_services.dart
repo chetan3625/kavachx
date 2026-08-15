@@ -38,7 +38,7 @@ class NotificationService extends GetxService {
     // 3. Setup Android Local Notification Channel
     await _localNotifications
         .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationPlugin>()
+            AndroidFlutterLocalNotificationsPlugin>()
         ?.createNotificationChannel(_channel);
 
     const initializationSettings = InitializationSettings(
@@ -47,7 +47,7 @@ class NotificationService extends GetxService {
     );
 
     await _localNotifications.initialize(
-      initializationSettings,
+      settings: initializationSettings,
       onDidReceiveNotificationResponse: (details) {
         debugPrint('[FCM CLICK] Payload: ${details.payload}');
       },
@@ -69,10 +69,10 @@ class NotificationService extends GetxService {
       final notification = message.notification;
       if (notification != null) {
         _localNotifications.show(
-          notification.hashCode,
-          notification.title,
-          notification.body,
-          NotificationDetails(
+          id: notification.hashCode,
+          title: notification.title,
+          body: notification.body,
+          notificationDetails: NotificationDetails(
             android: AndroidNotificationDetails(
               _channel.id,
               _channel.name,
