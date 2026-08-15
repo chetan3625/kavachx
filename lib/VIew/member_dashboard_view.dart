@@ -720,6 +720,7 @@ class _GlassContainer extends StatelessWidget {
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
         child: Container(
+          width: double.infinity,
           padding: padding,
           decoration: BoxDecoration(
             color: Colors.white.withValues(alpha: opacity),
