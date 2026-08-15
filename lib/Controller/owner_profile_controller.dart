@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:kavachx/Controller/owner_dashboard_controller.dart';
 import 'package:kavachx/Services/api_service.dart';
 
 class OwnerProfileController extends GetxController {
@@ -22,11 +23,38 @@ class OwnerProfileController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    _loadFromLocalCache();
     fetchGymProfile();
   }
 
+  void _loadFromLocalCache() {
+    final userData = _apiService.getUserData();
+    if (userData != null && userData.isNotEmpty) {
+      ownerData.value = Map<String, dynamic>.from(userData);
+      ownerNameController.text = userData['name'] ?? '';
+      phoneController.text = userData['phone'] ?? '';
+    }
+
+    if (Get.isRegistered<OwnerDashboardController>()) {
+      final dashboard = Get.find<OwnerDashboardController>();
+      if (ownerNameController.text.isEmpty) {
+        ownerNameController.text = dashboard.ownerName.value;
+      }
+      gymNameController.text = dashboard.gymName.value;
+      gymPhoneController.text = dashboard.gymPhone.value;
+      gymAddressController.text = dashboard.gymAddress.value;
+      gymData['gymToken'] = dashboard.gymToken.value;
+      gymData['name'] = dashboard.gymName.value;
+      gymData['phone'] = dashboard.gymPhone.value;
+      gymData['address'] = dashboard.gymAddress.value;
+    }
+
+    if (ownerNameController.text.isNotEmpty || gymNameController.text.isNotEmpty) {
+      isLoading.value = false;
+    }
+  }
+
   Future<void> fetchGymProfile() async {
-    isLoading.value = true;
     try {
       final response = await _apiService.getGymProfile();
       if (response.isOk && response.body?['success'] == true) {
@@ -34,14 +62,11 @@ class OwnerProfileController extends GetxController {
         ownerData.value = Map<String, dynamic>.from(data['owner'] ?? {});
         gymData.value = Map<String, dynamic>.from(data['gym'] ?? {});
 
-        // Populate controllers
         ownerNameController.text = ownerData['name'] ?? '';
         phoneController.text = ownerData['phone'] ?? '';
         gymNameController.text = gymData['name'] ?? '';
         gymPhoneController.text = gymData['phone'] ?? '';
-        gymAddressController.text = gymAddressController.text.isNotEmpty
-            ? gymAddressController.text
-            : (gymData['address'] ?? '');
+        gymAddressController.text = gymData['address'] ?? '';
       } else {
         // Fallback to /auth/me
         final userRes = await _apiService.get('/auth/me');
@@ -87,6 +112,15 @@ class OwnerProfileController extends GetxController {
         final data = response.body['data'] ?? {};
         ownerData.value = Map<String, dynamic>.from(data['owner'] ?? {});
         gymData.value = Map<String, dynamic>.from(data['gym'] ?? {});
+
+        // Sync with OwnerDashboardController if active
+        if (Get.isRegistered<OwnerDashboardController>()) {
+          final dashboard = Get.find<OwnerDashboardController>();
+          dashboard.ownerName.value = ownerNameController.text.trim();
+          dashboard.gymName.value = gymNameController.text.trim();
+          dashboard.gymPhone.value = gymPhoneController.text.trim();
+          dashboard.gymAddress.value = gymAddressController.text.trim();
+        }
 
         _showSnackbar('Success 🎉', 'Gym profile updated successfully!');
       } else {
