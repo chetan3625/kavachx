@@ -280,40 +280,44 @@ class MemberDashboardView extends StatelessWidget {
             Widget sliderWidget;
 
             if (hasCompleted && !isCheckedIn) {
-              sliderWidget = ClipRRect(
-                borderRadius: BorderRadius.circular(24),
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-                  child: Container(
-                    height: 56,
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF34C759).withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(
-                        color: const Color(0xFF34C759).withValues(alpha: 0.40),
-                        width: 1.5,
+              sliderWidget = SizedBox(
+                width: double.infinity,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(24),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+                    child: Container(
+                      width: double.infinity,
+                      height: 56,
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF34C759).withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(
+                          color: const Color(0xFF34C759).withValues(alpha: 0.40),
+                          width: 1.5,
+                        ),
                       ),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: const [
-                        Icon(
-                          Icons.check_circle_rounded,
-                          color: Color(0xFF34C759),
-                          size: 20,
-                        ),
-                        SizedBox(width: 8),
-                        Text(
-                          "TODAY'S ATTENDANCE COMPLETED",
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 1.1,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: const [
+                          Icon(
+                            Icons.check_circle_rounded,
+                            color: Color(0xFF34C759),
+                            size: 20,
                           ),
-                        ),
-                      ],
+                          SizedBox(width: 8),
+                          Text(
+                            "TODAY'S ATTENDANCE COMPLETED",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 1.1,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -323,57 +327,61 @@ class MemberDashboardView extends StatelessWidget {
                   ? const Color(0xFFFF3B30)
                   : const Color(0xFF34C759);
 
-              sliderWidget = ClipRRect(
-                borderRadius: BorderRadius.circular(24),
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 300),
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      color: themeColor.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(
-                        color: themeColor.withValues(alpha: 0.40),
-                        width: 1.5,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: themeColor.withValues(alpha: 0.25),
-                          blurRadius: 20,
-                          offset: const Offset(0, 8),
+              sliderWidget = SizedBox(
+                width: double.infinity,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(24),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+                    child: AnimatedContainer(
+                      width: double.infinity,
+                      duration: const Duration(milliseconds: 300),
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: themeColor.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(
+                          color: themeColor.withValues(alpha: 0.40),
+                          width: 1.5,
                         ),
-                      ],
-                    ),
-                    child: SlideAction(
-                      key: ValueKey(isCheckedIn),
-                      reversed: isCheckedIn,
-                      onSubmit: () {
-                        controller.toggleCheckIn(!isCheckedIn);
-                        return null;
-                      },
-                      alignment: Alignment.centerRight,
-                      text: isCheckedIn
-                          ? '◀  SLIDE TO CHECK OUT      '
-                          : 'SLIDE TO CHECK IN  ▶      ',
-                      textStyle: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1.2,
+                        boxShadow: [
+                          BoxShadow(
+                            color: themeColor.withValues(alpha: 0.25),
+                            blurRadius: 20,
+                            offset: const Offset(0, 8),
+                          ),
+                        ],
                       ),
-                      outerColor: Colors.transparent,
-                      innerColor: themeColor,
-                      sliderButtonIcon: Icon(
-                        isCheckedIn
-                            ? Icons.logout_rounded
-                            : Icons.login_rounded,
-                        color: Colors.white,
-                        size: 20,
+                      child: SlideAction(
+                        key: ValueKey(isCheckedIn),
+                        reversed: isCheckedIn,
+                        onSubmit: () {
+                          controller.toggleCheckIn(!isCheckedIn);
+                          return null;
+                        },
+                        alignment: Alignment.centerRight,
+                        text: isCheckedIn
+                            ? '◀  SLIDE TO CHECK OUT      '
+                            : 'SLIDE TO CHECK IN  ▶      ',
+                        textStyle: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.2,
+                        ),
+                        outerColor: Colors.transparent,
+                        innerColor: themeColor,
+                        sliderButtonIcon: Icon(
+                          isCheckedIn
+                              ? Icons.logout_rounded
+                              : Icons.login_rounded,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                        borderRadius: 20,
+                        height: 56,
+                        elevation: 0,
                       ),
-                      borderRadius: 20,
-                      height: 56,
-                      elevation: 0,
                     ),
                   ),
                 ),

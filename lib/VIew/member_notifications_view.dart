@@ -149,12 +149,15 @@ class MemberNotificationsView extends StatelessWidget {
       onTap: () => controller.markAsRead(notification.id),
       child: Padding(
         padding: const EdgeInsets.only(bottom: 12),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(16),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-            child: Container(
-              padding: const EdgeInsets.all(16),
+        child: SizedBox(
+          width: double.infinity,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: notification.isRead
                     ? Colors.white.withValues(alpha: 0.05)
@@ -230,6 +233,7 @@ class MemberNotificationsView extends StatelessWidget {
                     ),
                   ),
                 ],
+              ),
               ),
             ),
           ),
