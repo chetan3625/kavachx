@@ -20,7 +20,7 @@ class AddEditPlanSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final controller = Get.find<MembershipPlansController>();
+    final controller = Get.find<MembershipPlanController>();
 
     // Push content up above the keyboard.
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
@@ -264,21 +264,8 @@ class AddEditPlanSheet extends StatelessWidget {
                         onPressed: controller.isSubmitting.value
                             ? null
                             : () async {
-                                final success = await controller.savePlan();
-                                if (success) {
-                                  Get.back();
-                                  Get.snackbar(
-                                    'Success 🎉',
-                                    controller.isEditing
-                                        ? 'Plan updated successfully'
-                                        : 'New plan created successfully',
-                                    snackPosition: SnackPosition.BOTTOM,
-                                    backgroundColor: const Color(0xFF1C1C22),
-                                    colorText: Colors.white,
-                                    borderColor: const Color(0xFF34C759),
-                                    borderWidth: 1,
-                                  );
-                                }
+                                await controller.savePlan();
+                                Get.back();
                               },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFFFF3B30),

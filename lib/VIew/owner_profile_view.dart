@@ -187,28 +187,32 @@ class OwnerProfileView extends StatelessWidget {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Gym Token Code',
-                              style: TextStyle(
-                                color: Color(0xFFA1A1AA),
-                                fontSize: 12,
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Gym Token Code',
+                                style: TextStyle(
+                                  color: Color(0xFFA1A1AA),
+                                  fontSize: 12,
+                                ),
                               ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              controller.gymData['gymToken'] ?? '-',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 1.5,
+                              const SizedBox(height: 4),
+                              Text(
+                                controller.gymData['gymToken'] ?? '-',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 1.0,
+                                ),
+                                overflow: TextOverflow.ellipsis,
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
+                        const SizedBox(width: 12),
                         ElevatedButton.icon(
                           onPressed: () => Get.to(() => const GymQrDisplayView()),
                           style: ElevatedButton.styleFrom(

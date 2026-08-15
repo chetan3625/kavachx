@@ -57,6 +57,9 @@ class MembershipPlanController extends GetxController {
     }
   }
 
+  bool get isEditing => false;
+  Future<void> savePlan() => createPlan();
+
   void clearForm() {
     nameController.clear();
     priceController.clear();
