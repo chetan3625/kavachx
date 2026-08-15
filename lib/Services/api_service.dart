@@ -483,6 +483,12 @@ class ApiService extends GetConnect {
     return put('/gyms/profile', data);
   }
 
+  // ================= GYM OWNER MEMBER DETAIL ATTENDANCE ENDPOINT =================
+
+  Future<Response> getMemberAttendanceHistoryForOwner(String memberId) {
+    return get('/gyms/members/$memberId/attendance-history');
+  }
+
   // ================= FCM TOKEN ENDPOINT =================
 
   Future<Response> updateFcmToken(String token) {

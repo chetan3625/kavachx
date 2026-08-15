@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:kavachx/Controller/owner_members_controller.dart';
+import 'package:kavachx/VIew/member_detail_attendance_view.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class OwnerMembersView extends StatelessWidget {
@@ -25,10 +26,10 @@ class OwnerMembersView extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Expanded(
+                const Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
+                    children: [
                       Text(
                         'Gym Members',
                         style: TextStyle(
@@ -110,11 +111,11 @@ class OwnerMembersView extends StatelessWidget {
               final filteredMembers = controller.filteredMembers;
 
               if (filteredMembers.isEmpty) {
-                return _GlassContainer(
-                  padding: const EdgeInsets.all(32),
+                return const _GlassContainer(
+                  padding: EdgeInsets.all(32),
                   child: Center(
                     child: Column(
-                      children: const [
+                      children: [
                         Icon(
                           Icons.people_outline_rounded,
                           color: Color(0xFFA1A1AA),
@@ -157,141 +158,185 @@ class OwnerMembersView extends StatelessWidget {
                   final int streakDays = member['streakDays'] ?? 0;
                   final String goal = member['fitnessGoal'] ?? 'General';
 
-                  return _GlassContainer(
-                    padding: const EdgeInsets.all(16),
-                    borderRadius: 16,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Card Header Row (Safe with Expanded)
-                        Row(
-                          children: [
-                            CircleAvatar(
-                              radius: 22,
-                              backgroundColor: const Color(
-                                0xFFFF3B30,
-                              ).withValues(alpha: 0.2),
-                              child: Text(
-                                name.isNotEmpty ? name[0].toUpperCase() : 'M',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    name,
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 15,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    phone.isNotEmpty ? phone : email,
-                                    style: const TextStyle(
-                                      color: Color(0xFFA1A1AA),
-                                      fontSize: 12,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ],
-                              ),
-                            ),
-                            if (phone.isNotEmpty)
-                              IconButton(
-                                icon: Container(
-                                  padding: const EdgeInsets.all(6),
-                                  decoration: BoxDecoration(
-                                    color: const Color(
-                                      0xFF34C759,
-                                    ).withValues(alpha: 0.15),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: const Icon(
-                                    Icons.phone_rounded,
-                                    color: Color(0xFF34C759),
-                                    size: 18,
+                  return GestureDetector(
+                    onTap: () => Get.to(
+                      () => MemberDetailAttendanceView(
+                        memberId: member['_id'] ?? '',
+                        initialMemberData: member,
+                      ),
+                    ),
+                    child: _GlassContainer(
+                      padding: const EdgeInsets.all(16),
+                      borderRadius: 16,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Card Header Row
+                          Row(
+                            children: [
+                              CircleAvatar(
+                                radius: 22,
+                                backgroundColor: const Color(0xFFFF3B30)
+                                    .withValues(alpha: 0.2),
+                                child: Text(
+                                  name.isNotEmpty ? name[0].toUpperCase() : 'M',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
                                   ),
                                 ),
-                                onPressed: () async {
-                                  final Uri launchUri = Uri(
-                                    scheme: 'tel',
-                                    path: phone,
-                                  );
-                                  if (await canLaunchUrl(launchUri)) {
-                                    await launchUrl(launchUri);
-                                  }
-                                },
-                                tooltip: 'Call Member',
                               ),
-                          ],
-                        ),
-
-                        const Divider(color: Color(0xFF2C2C35), height: 20),
-
-                        // Stats Badges Row (Safe wrapping)
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Flexible(
-                              child: Row(
-                                children: [
-                                  const Icon(
-                                    Icons.local_fire_department_rounded,
-                                    color: Color(0xFFFF9500),
-                                    size: 16,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Flexible(
-                                    child: Text(
-                                      '$streakDays Day Streak',
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      name,
                                       style: const TextStyle(
                                         color: Colors.white,
-                                        fontSize: 12,
                                         fontWeight: FontWeight.bold,
+                                        fontSize: 15,
                                       ),
+                                      maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                     ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Flexible(
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.06),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Text(
-                                  'Goal: ${goal.replaceAll('_', ' ').toUpperCase()}',
-                                  style: const TextStyle(
-                                    color: Color(0xFFA1A1AA),
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      phone.isNotEmpty ? phone : email,
+                                      style: const TextStyle(
+                                        color: Color(0xFFA1A1AA),
+                                        fontSize: 12,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
                                 ),
                               ),
+                              if (phone.isNotEmpty)
+                                IconButton(
+                                  icon: Container(
+                                    padding: const EdgeInsets.all(6),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF34C759)
+                                          .withValues(alpha: 0.15),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(
+                                      Icons.phone_rounded,
+                                      color: Color(0xFF34C759),
+                                      size: 18,
+                                    ),
+                                  ),
+                                  onPressed: () async {
+                                    final Uri launchUri = Uri(
+                                      scheme: 'tel',
+                                      path: phone,
+                                    );
+                                    if (await canLaunchUrl(launchUri)) {
+                                      await launchUrl(launchUri);
+                                    }
+                                  },
+                                  tooltip: 'Call Member',
+                                ),
+                            ],
+                          ),
+
+                          const Divider(color: Color(0xFF2C2C35), height: 20),
+
+                          // Stats Badges Row
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Flexible(
+                                child: Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.local_fire_department_rounded,
+                                      color: Color(0xFFFF9500),
+                                      size: 16,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Flexible(
+                                      child: Text(
+                                        '$streakDays Day Streak',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Flexible(
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withValues(alpha: 0.06),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    'Goal: ${goal.replaceAll('_', ' ').toUpperCase()}',
+                                    style: const TextStyle(
+                                      color: Color(0xFFA1A1AA),
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+
+                          const SizedBox(height: 12),
+
+                          // ACTION BUTTON: View Attendance & Workouts
+                          SizedBox(
+                            width: double.infinity,
+                            child: OutlinedButton.icon(
+                              onPressed: () => Get.to(
+                                () => MemberDetailAttendanceView(
+                                  memberId: member['_id'] ?? '',
+                                  initialMemberData: member,
+                                ),
+                              ),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: const Color(0xFFFF3B30),
+                                side: BorderSide(
+                                  color: const Color(0xFFFF3B30)
+                                      .withValues(alpha: 0.4),
+                                ),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 8),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                              ),
+                              icon: const Icon(
+                                Icons.fitness_center_rounded,
+                                size: 16,
+                              ),
+                              label: const Text(
+                                'View Attendance & Workouts',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                             ),
-                          ],
-                        ),
-                      ],
+                          ),
+                        ],
+                      ),
                     ),
                   );
                 },

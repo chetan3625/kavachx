@@ -9,6 +9,7 @@ import {
   getTodayCheckIns,
   getGymProfile,
   updateGymProfile,
+  getMemberAttendanceHistoryForOwner,
 } from "../controllers/gyms/gym.controller.js";
 import {
   getPlans,
@@ -50,6 +51,12 @@ router.patch(
   rejectRequest,
 );
 router.get("/members", protect, authorize("gym_owner"), getGymMembers);
+router.get(
+  "/members/:memberId/attendance-history",
+  protect,
+  authorize("gym_owner"),
+  getMemberAttendanceHistoryForOwner,
+);
 router.get(
   "/inactive-members",
   protect,

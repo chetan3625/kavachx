@@ -289,3 +289,75 @@ export const updateGymProfile = async (req, res, next) => {
     next(error);
   }
 };
+
+export const getMemberAttendanceHistoryForOwner = async (req, res, next) => {
+  try {
+    const ownerId = req.user.userId;
+    const { memberId } = req.params;
+
+    const gym = await Gym.findOne({ ownerId, isActive: true });
+    if (!gym)
+      return res
+        .status(404)
+        .json({ success: false, message: "Active gym not found." });
+
+    const member = await User.findById(memberId).select("-password");
+    if (!member) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Member not found." });
+    }
+
+    const { default: Attendance } = await import("../../models/Attendance.js");
+    const { default: Exercise } = await import("../../models/Exercise.js");
+
+    const attendances = await Attendance.find({ memberId }).sort({
+      checkInTime: -1,
+      createdAt: -1,
+    });
+
+    const exercises = await Exercise.find({ memberId }).sort({ createdAt: -1 });
+
+    const exercisesByDate = {};
+    exercises.forEach((ex) => {
+      const dateKey = ex.dateStr || ex.dateString;
+      if (dateKey) {
+        if (!exercisesByDate[dateKey]) {
+          exercisesByDate[dateKey] = [];
+        }
+        exercisesByDate[dateKey].push(ex);
+      }
+    });
+
+    const history = attendances.map((att) => {
+      const dateKey = att.dateStr || att.dateString;
+      const dayExercises = exercisesByDate[dateKey] || [];
+      const primaryTargetPart =
+        dayExercises.length > 0 && dayExercises[0].muscleGroup
+          ? dayExercises[0].muscleGroup
+          : null;
+
+      return {
+        _id: att._id,
+        dateStr: dateKey,
+        checkInTime: att.checkInTime,
+        checkOutTime: att.checkOutTime,
+        status: att.status,
+        streakDays: att.streakDays,
+        targetPart: primaryTargetPart,
+        exercises: dayExercises,
+      };
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        member,
+        totalCheckIns: attendances.length,
+        history,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
