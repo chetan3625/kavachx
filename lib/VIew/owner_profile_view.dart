@@ -185,9 +185,11 @@ class OwnerProfileView extends StatelessWidget {
               _GlassCard(
                 children: [
                   Padding(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 14,
+                    ),
                     child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Expanded(
                           child: Column(
@@ -205,11 +207,12 @@ class OwnerProfileView extends StatelessWidget {
                                 controller.gymData['gymToken'] ?? '-',
                                 style: const TextStyle(
                                   color: Colors.white,
-                                  fontSize: 14,
+                                  fontSize: 13,
                                   fontWeight: FontWeight.bold,
-                                  letterSpacing: 1.0,
+                                  letterSpacing: 0.8,
                                 ),
                                 overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
                               ),
                             ],
                           ),
@@ -220,6 +223,7 @@ class OwnerProfileView extends StatelessWidget {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFFFF3B30),
                             foregroundColor: Colors.white,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
@@ -237,40 +241,40 @@ class OwnerProfileView extends StatelessWidget {
               ),
               const SizedBox(height: 28),
 
-              // SAVE CHANGES BUTTON
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: controller.isSaving.value
-                      ? null
-                      : controller.updateGymProfile,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFFF3B30),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                  ),
-                  child: controller.isSaving.value
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
-                          ),
-                        )
-                      : const Text(
-                          'SAVE CHANGES',
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 1,
-                          ),
+              // SAVE CHANGES BUTTON — isolated Obx for isSaving
+              Obx(() => SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: controller.isSaving.value
+                          ? null
+                          : controller.updateGymProfile,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFFF3B30),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
                         ),
-                ),
-              ),
+                      ),
+                      child: controller.isSaving.value
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : const Text(
+                              'SAVE CHANGES',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 1,
+                              ),
+                            ),
+                    ),
+                  )),
               const SizedBox(height: 16),
 
               // LOGOUT BUTTON
@@ -345,17 +349,27 @@ class _GlassCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(16),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-        child: Container(
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.08),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+    // width: double.infinity is REQUIRED — without it, BackdropFilter passes
+    // BoxConstraints(w=Infinity) to child Rows containing ElevatedButtons,
+    // which throws "BoxConstraints forces an infinite width."
+    return SizedBox(
+      width: double.infinity,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+          child: Container(
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: children,
+            ),
           ),
-          child: Column(children: children),
         ),
       ),
     );
