@@ -75,7 +75,7 @@ class OwnerDashboardMainView extends StatelessWidget {
                   case 4:
                     return const InactiveMembersView();
                   case 5:
-                    return const OwnerProfileView();
+                    return const OwnerProfileView(isTab: true);
                   default:
                     return _buildHomeTab(context, controller);
                 }
