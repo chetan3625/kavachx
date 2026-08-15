@@ -23,7 +23,13 @@ class SplashController extends GetxController {
 
       // Refresh fresh user data & gym association from server on launch
       try {
-        final response = await _apiService.getMe();
+        var response = await _apiService.getMe();
+        if (!response.isOk && response.statusCode == 401) {
+          final refreshed = await _apiService.refreshAccessToken();
+          if (refreshed) {
+            response = await _apiService.getMe();
+          }
+        }
         if (response.isOk && response.body != null) {
           _apiService.saveAuthPayload(response.body);
         }

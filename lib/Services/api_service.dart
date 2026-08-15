@@ -68,27 +68,70 @@ class ApiService extends GetConnect {
 
       // Auto Session Expiration handling on 401
       if (response.statusCode == 401 &&
-          !request.url.path.contains('/auth/login')) {
+          !request.url.path.contains('/auth/login') &&
+          !request.url.path.contains('/auth/refresh')) {
         debugPrint(
-          'Token expired or unauthorized. Clearing storage and redirecting...',
+          '[ApiService] 401 Unauthorized received. Attempting auto-refresh...',
         );
-        clearAuthData();
-        Get.offAllNamed('/splash');
-        Get.snackbar(
-          'Session Expired',
-          'Please log in again to continue.',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: const Color(0xFF1C1C22),
-          colorText: Colors.white,
-          borderColor: const Color(0xFFFF3B30),
-          borderWidth: 1,
-        );
+        final refreshed = await refreshAccessToken();
+        if (!refreshed) {
+          debugPrint(
+            '[ApiService] Token refresh failed. Clearing storage and redirecting to login...',
+          );
+          clearAuthData();
+          Get.offAllNamed('/role-selection');
+          Get.snackbar(
+            'Session Expired',
+            'Please log in again to continue.',
+            snackPosition: SnackPosition.BOTTOM,
+            backgroundColor: const Color(0xFF1C1C22),
+            colorText: Colors.white,
+            borderColor: const Color(0xFFFF3B30),
+            borderWidth: 1,
+          );
+        }
       }
 
       return response;
     });
 
     super.onInit();
+  }
+
+  /// Automatically refreshes the access token using stored refresh token
+  Future<bool> refreshAccessToken() async {
+    final refreshToken = getRefreshToken();
+    if (refreshToken == null || refreshToken.isEmpty) {
+      debugPrint('[ApiService] Cannot refresh token: No refresh token in storage.');
+      return false;
+    }
+
+    try {
+      debugPrint('[ApiService] Attempting token refresh with backend...');
+      final response = await post('/auth/refresh', {'refreshToken': refreshToken});
+      if (response.isOk && response.body != null) {
+        final data = response.body;
+        final newAccessToken =
+            data['accessToken'] ?? data['token'] ?? data['data']?['accessToken'];
+        final newRefreshToken =
+            data['refreshToken'] ?? data['data']?['refreshToken'];
+
+        if (newAccessToken != null && (newAccessToken as String).isNotEmpty) {
+          _storage.write(_tokenKey, newAccessToken);
+          if (newRefreshToken != null && (newRefreshToken as String).isNotEmpty) {
+            _storage.write(_refreshTokenKey, newRefreshToken);
+          }
+          debugPrint('[ApiService] Access token refreshed successfully!');
+          return true;
+        }
+      }
+      debugPrint(
+        '[ApiService] Token refresh failed: ${response.statusCode} - ${response.bodyString}',
+      );
+    } catch (e) {
+      debugPrint('[ApiService] Error during token refresh: $e');
+    }
+    return false;
   }
 
   // Save Token, User Data, Refresh Token, and QR Payload locally
@@ -145,7 +188,11 @@ class ApiService extends GetConnect {
 
   bool isLoggedIn() {
     final token = getToken();
-    return token != null && token.isNotEmpty;
+    final refreshToken = getRefreshToken();
+    final userData = getUserData();
+    return (token != null && token.isNotEmpty) ||
+        (refreshToken != null && refreshToken.isNotEmpty) ||
+        (userData != null && userData.isNotEmpty);
   }
 
   // Clear Storage on Logout / Expiration
