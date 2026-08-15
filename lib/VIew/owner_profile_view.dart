@@ -12,7 +12,9 @@ class OwnerProfileView extends StatelessWidget {
     final controller = Get.put(OwnerProfileController());
 
     return Obx(() {
-      if (controller.isLoading.value) {
+      if (controller.isLoading.value &&
+          controller.ownerNameController.text.isEmpty &&
+          controller.gymNameController.text.isEmpty) {
         return const Center(
           child: CircularProgressIndicator(color: Color(0xFFFF3B30)),
         );

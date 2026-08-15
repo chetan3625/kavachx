@@ -49,6 +49,9 @@ class OwnerProfileController extends GetxController {
       gymData['address'] = dashboard.gymAddress.value;
     }
 
+    ownerData.refresh();
+    gymData.refresh();
+
     if (ownerNameController.text.isNotEmpty || gymNameController.text.isNotEmpty) {
       isLoading.value = false;
     }
@@ -86,6 +89,8 @@ class OwnerProfileController extends GetxController {
     } catch (e) {
       debugPrint('Error fetching gym profile: $e');
     } finally {
+      ownerData.refresh();
+      gymData.refresh();
       isLoading.value = false;
     }
   }
@@ -112,6 +117,8 @@ class OwnerProfileController extends GetxController {
         final data = response.body['data'] ?? {};
         ownerData.value = Map<String, dynamic>.from(data['owner'] ?? {});
         gymData.value = Map<String, dynamic>.from(data['gym'] ?? {});
+        ownerData.refresh();
+        gymData.refresh();
 
         // Sync with OwnerDashboardController if active
         if (Get.isRegistered<OwnerDashboardController>()) {
