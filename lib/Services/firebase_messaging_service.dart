@@ -114,8 +114,17 @@ class FirebaseMessagingService extends GetxService {
             _channel.name,
             channelDescription: _channel.description,
             importance: Importance.max,
-            priority: Priority.high,
+            priority: Priority.max,
+            playSound: true,
+            enableVibration: true,
+            visibility: NotificationVisibility.public,
+            channelShowBadge: true,
             icon: '@mipmap/ic_launcher',
+          ),
+          iOS: const DarwinNotificationDetails(
+            presentAlert: true,
+            presentBadge: true,
+            presentSound: true,
           ),
         ),
       );
