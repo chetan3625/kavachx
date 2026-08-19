@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:kavachx/Constants/app_theme.dart';
+import 'package:kavachx/Constants/app_transitions.dart';
 import 'package:kavachx/Services/api_service.dart';
 import 'package:kavachx/Services/token_refresh_service.dart';
 import 'package:kavachx/VIew/splash.dart';
@@ -58,32 +59,57 @@ class KavachXApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: AppTheme.darkTheme,
       themeMode: ThemeMode.dark,
+      // Default page transition — smooth right-to-left slide with fade for all screens
+      defaultTransition: Transition.rightToLeftWithFade,
+      transitionDuration: const Duration(milliseconds: 320),
       initialRoute: '/splash',
       getPages: [
+        // Splash — no animation (app start)
         GetPage(
           name: '/splash',
           page: () => const SplashView(),
           binding: SplashBinding(),
+          transition: Transition.noTransition,
         ),
+        // Role Selection — elegant hero fade (brand reveal)
         GetPage(
           name: '/role-selection',
           page: () => const RoleSelectionView(),
+          transition: AppTransitions.heroFadeTransition,
+          transitionDuration: AppTransitions.heroFadeDuration,
+          curve: Curves.easeInOutCubic,
         ),
+        // Owner Dashboard — fade + slide (auth → main experience)
         GetPage(
           name: '/owner-dashboard',
           page: () => const OwnerDashboardMainView(),
+          transition: AppTransitions.fadeSlideTransition,
+          transitionDuration: AppTransitions.dashboardDuration,
+          curve: Curves.easeOutCubic,
         ),
+        // Member Dashboard — fade + slide (auth → main experience)
         GetPage(
           name: '/member-dashboard',
           page: () => const MemberDashboardView(),
+          transition: AppTransitions.fadeSlideTransition,
+          transitionDuration: AppTransitions.dashboardDuration,
+          curve: Curves.easeOutCubic,
         ),
+        // Member Onboarding — slide up (sheet-like onboarding feel)
         GetPage(
           name: '/member-onboarding',
           page: () => const MemberOnboardingView(),
+          transition: AppTransitions.slideUpTransition,
+          transitionDuration: AppTransitions.onboardingDuration,
+          curve: Curves.easeOutCubic,
         ),
+        // Owner Onboarding — slide up (sheet-like onboarding feel)
         GetPage(
           name: '/owner-onboarding',
-          page: () => const OwnerMembersView(),
+          page: () => const OwnerOnboardingView(),
+          transition: AppTransitions.slideUpTransition,
+          transitionDuration: AppTransitions.onboardingDuration,
+          curve: Curves.easeOutCubic,
         ),
       ],
     );

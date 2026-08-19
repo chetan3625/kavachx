@@ -106,7 +106,9 @@ class MembershipPlanController extends GetxController {
             : ['Full Gym Access'],
       );
 
-      if (response.isOk) {
+      if (response.isOk &&
+          response.body != null &&
+          response.body['success'] == true) {
         _showSnackbar('Success 🎉', 'Membership plan created successfully');
         clearForm();
         await fetchPlans();
@@ -125,12 +127,15 @@ class MembershipPlanController extends GetxController {
   Future<void> deletePlan(String planId) async {
     try {
       final response = await _apiService.deleteMembershipPlan(planId);
-      if (response.isOk) {
+      if (response.isOk &&
+          response.body != null &&
+          response.body['success'] == true) {
         plansList.removeWhere((p) => p.id == planId);
         plansList.refresh();
         _showSnackbar('Deleted', 'Plan removed');
       } else {
-        _showSnackbar('Error', 'Failed to delete plan', isError: true);
+        final msg = response.body?['message'] ?? 'Failed to delete plan';
+        _showSnackbar('Error', msg, isError: true);
       }
     } catch (e) {
       debugPrint('Error deleting plan: $e');

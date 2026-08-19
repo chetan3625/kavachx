@@ -8,8 +8,14 @@ import Notification from "../../models/Notification.js";
 import Gym from "../../models/Gym.js";
 import { uploadBufferToCloudinary } from "../../utils/cloudinary.js";
 
-// Helper: Format date to YYYY-MM-DD
-const getTodayDateStr = () => new Date().toISOString().split("T")[0];
+// Helper: Format date to YYYY-MM-DD based on local calendar time
+const getTodayDateStr = (dateObj = new Date()) => {
+  const d = dateObj instanceof Date ? dateObj : new Date(dateObj);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
 
 // Helper: Get Monday to Sunday date strings for current week
 const getCurrentWeekDates = () => {
@@ -23,7 +29,7 @@ const getCurrentWeekDates = () => {
   for (let i = 0; i < 7; i++) {
     const d = new Date(monday);
     d.setDate(monday.getDate() + i);
-    dates.push(d.toISOString().split("T")[0]);
+    dates.push(getTodayDateStr(d));
   }
   return dates;
 };
@@ -80,7 +86,7 @@ export const getDashboardSummary = async (req, res, next) => {
     let streakDays = 0;
     let checkDate = new Date();
     for (let i = 0; i < 30; i++) {
-      const dStr = checkDate.toISOString().split("T")[0];
+      const dStr = getTodayDateStr(checkDate);
       if (uniqueDates.includes(dStr)) {
         streakDays++;
         checkDate.setDate(checkDate.getDate() - 1);
@@ -110,25 +116,25 @@ export const getDashboardSummary = async (req, res, next) => {
         hasCompletedTodayAttendance,
         streakDays: streakDays || user.streakDays || 0,
         todayTargetPart:
-          workoutLog?.targetPart || user.todayTargetPart || "Chest & Triceps",
-        waterLitres: user.waterLitres ?? 2.5,
-        targetWaterLitres: user.targetWaterLitres ?? 4.0,
-        currentWeightKg: user.currentWeightKg ?? 74.5,
-        targetWeightKg: user.targetWeightKg ?? 70.0,
+          workoutLog?.targetPart || user.todayTargetPart || "Full Body Routine",
+        waterLitres: user.waterLitres ?? 0,
+        targetWaterLitres: user.targetWaterLitres ?? 3.5,
+        currentWeightKg: user.currentWeightKg ?? 0,
+        targetWeightKg: user.targetWeightKg ?? 0,
         totalDurationMinutes:
           workoutLog?.totalDurationMinutes ||
           exercises.reduce((sum, e) => sum + (e.durationMinutes || 0), 0),
-        caloriesBurned: workoutLog?.caloriesBurned || 300,
+        caloriesBurned: workoutLog?.caloriesBurned || 0,
         weeklyActivity,
         exercises: exercises.map((ex) => ({
           id: ex._id.toString(),
           name: ex.name,
           muscleGroup: ex.muscleGroup,
-          weightInKg: ex.weightInKg,
-          repsPerSet: ex.repsPerSet,
-          totalSets: ex.totalSets,
-          completedSets: ex.completedSets,
-          durationMinutes: ex.durationMinutes || 15,
+          weightInKg: ex.weightInKg || 0,
+          repsPerSet: ex.repsPerSet || 0,
+          totalSets: ex.totalSets || 0,
+          completedSets: ex.completedSets || 0,
+          durationMinutes: ex.durationMinutes || 0,
           notes: ex.notes || "",
         })),
       },

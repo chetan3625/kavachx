@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:kavachx/Constants/app_transitions.dart';
 import 'package:kavachx/Controller/member_attendance_controller.dart';
 import 'package:kavachx/Model/attendance_history_model.dart';
 import 'package:intl/intl.dart';
@@ -63,7 +64,7 @@ class MemberAttendanceHistoryView extends StatelessWidget {
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton.icon(
-                        onPressed: () => Get.to(() => const QrScannerView()),
+                        onPressed: () => AppTransitions.scaleFade(() => const QrScannerView()),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFFFF3B30),
                           foregroundColor: Colors.white,

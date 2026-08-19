@@ -28,6 +28,10 @@ class OwnerDashboardController extends GetxController {
   final RxList<Map<String, dynamic>> pendingRequestsList =
       <Map<String, dynamic>>[].obs;
 
+  bool _isFetching = false;
+  bool _isDataLoaded = false;
+  bool get isDataLoaded => _isDataLoaded;
+
   @override
   void onInit() {
     super.onInit();
@@ -40,8 +44,13 @@ class OwnerDashboardController extends GetxController {
     return ownerName.value.split(' ').first.obs;
   }
 
-  Future<void> fetchDashboardStats() async {
-    isLoading.value = true;
+  Future<void> fetchDashboardStats({bool forceRefresh = false}) async {
+    if (_isFetching) return;
+    if (_isDataLoaded && !forceRefresh) return;
+    _isFetching = true;
+    if (!_isDataLoaded) {
+      isLoading.value = true;
+    }
     try {
       // 1. Fetch Current Owner & Gym Profile
       final userRes = await _apiService.get('/auth/me');
@@ -85,10 +94,12 @@ class OwnerDashboardController extends GetxController {
       if (checkInsRes.isOk && checkInsRes.body?['success'] == true) {
         todayCheckInsCount.value = checkInsRes.body['count'] ?? 0;
       }
+      _isDataLoaded = true;
     } catch (e) {
       debugPrint('Error fetching owner dashboard stats: $e');
     } finally {
       isLoading.value = false;
+      _isFetching = false;
     }
   }
 

@@ -4,16 +4,21 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get/get.dart';
 import 'package:kavachx/Services/api_service.dart';
 
+import 'package:audioplayers/audioplayers.dart';
+
 class FirebaseMessagingService extends GetxService {
   final FirebaseMessaging _messaging = FirebaseMessaging.instance;
   final FlutterLocalNotificationsPlugin _localNotifications =
       FlutterLocalNotificationsPlugin();
+  AudioPlayer? _audioPlayer;
 
   static const AndroidNotificationChannel _channel = AndroidNotificationChannel(
     'high_importance_channel',
     'High Importance Notifications',
     description: 'This channel is used for important announcements.',
     importance: Importance.max,
+    playSound: true,
+    enableVibration: true,
   );
 
   Future<FirebaseMessagingService> init() async {
@@ -99,11 +104,23 @@ class FirebaseMessagingService extends GetxService {
     }
   }
 
+  Future<void> playNotificationSound() async {
+    try {
+      _audioPlayer ??= AudioPlayer();
+      await _audioPlayer?.stop();
+      await _audioPlayer?.play(AssetSource('sounds/notification_sound.mp3'));
+    } catch (e) {
+      debugPrint('[NotificationSound] Audio note: $e');
+    }
+  }
+
   void _handleForegroundMessage(RemoteMessage message) {
     debugPrint('[FCM] Foreground message: ${message.notification?.title}');
 
     final notification = message.notification;
     if (notification != null) {
+      playNotificationSound();
+
       _localNotifications.show(
         id: notification.hashCode,
         title: notification.title,

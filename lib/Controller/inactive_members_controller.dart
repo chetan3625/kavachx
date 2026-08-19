@@ -16,10 +16,11 @@ class MemberActivityModel {
   });
 
   factory MemberActivityModel.fromJson(Map<String, dynamic> json) {
-    final userData = json['user'] ?? {};
+    final Map<String, dynamic> userData =
+        (json['user'] is Map) ? Map<String, dynamic>.from(json['user']) : json;
     return MemberActivityModel(
       user: UserModel(
-        id: userData['id'] ?? userData['_id'] ?? '',
+        id: userData['id'] ?? userData['_id'] ?? json['_id'] ?? json['id'] ?? '',
         name: userData['name'] ?? 'Member',
         email: userData['email'] ?? '',
         phone: userData['phone'] ?? '',
@@ -29,7 +30,10 @@ class MemberActivityModel {
       lastActiveDate: json['lastActiveDate'] != null
           ? DateTime.tryParse(json['lastActiveDate'].toString()) ??
                 DateTime.now()
-          : DateTime.now(),
+          : (json['lastActiveAt'] != null
+                ? DateTime.tryParse(json['lastActiveAt'].toString()) ??
+                      DateTime.now()
+                : DateTime.now()),
     );
   }
 }

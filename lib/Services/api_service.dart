@@ -197,11 +197,7 @@ class ApiService extends GetConnect {
 
   // Clear Storage on Logout / Expiration
   void clearAuthData() {
-    _storage.remove(_tokenKey);
-    _storage.remove(_refreshTokenKey);
-    _storage.remove(_userKey);
-    _storage.remove(_qrTokenKey);
-    _storage.remove(_qrUrlKey);
+    _storage.erase();
   }
 
   // ================= AUTH ENDPOINTS =================

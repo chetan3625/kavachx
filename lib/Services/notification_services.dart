@@ -1,3 +1,4 @@
+import 'package:audioplayers/audioplayers.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -8,13 +9,26 @@ class NotificationService extends GetxService {
   final FirebaseMessaging _fcm = FirebaseMessaging.instance;
   final FlutterLocalNotificationsPlugin _localNotifications =
       FlutterLocalNotificationsPlugin();
+  AudioPlayer? _audioPlayer;
 
   static const AndroidNotificationChannel _channel = AndroidNotificationChannel(
     'high_importance_channel',
     'High Importance Notifications',
     description: 'This channel is used for important announcements.',
     importance: Importance.max,
+    playSound: true,
+    enableVibration: true,
   );
+
+  Future<void> playNotificationSound() async {
+    try {
+      _audioPlayer ??= AudioPlayer();
+      await _audioPlayer?.stop();
+      await _audioPlayer?.play(AssetSource('sounds/notification_sound.mp3'));
+    } catch (e) {
+      debugPrint('[NotificationSound] Audio note: $e');
+    }
+  }
 
   Future<NotificationService> init() async {
     // 1. Request Notification Permissions
@@ -68,6 +82,8 @@ class NotificationService extends GetxService {
 
       final notification = message.notification;
       if (notification != null) {
+        playNotificationSound();
+
         _localNotifications.show(
           id: notification.hashCode,
           title: notification.title,
@@ -79,6 +95,8 @@ class NotificationService extends GetxService {
               channelDescription: _channel.description,
               importance: Importance.max,
               priority: Priority.high,
+              playSound: true,
+              enableVibration: true,
               icon: '@mipmap/ic_launcher',
             ),
           ),

@@ -48,6 +48,8 @@ dependencies:
   firebase_messaging: ^16.5.0
   image_picker: ^1.2.3
   flutter_local_notifications: ^22.3.0
+  google_fonts: ^6.2.1
+  audioplayers: ^6.5.0
 
 dev_dependencies:
   flutter_test:
@@ -76,6 +78,7 @@ flutter:
      - asset/app_backgrounds/splas_background.jpg
      - asset/app_backgrounds/role_selection.jpg
      - asset/app_backgrounds/authscreen.jpg
+     - asset/sounds/
   #   - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see

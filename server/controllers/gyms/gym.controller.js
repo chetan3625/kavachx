@@ -132,9 +132,19 @@ export const getInactiveMembers = async (req, res, next) => {
       }
 
       if (new Date(latestActivity) < cutoffDate) {
+        const daysAbsent = Math.max(
+          1,
+          Math.floor((now.getTime() - new Date(latestActivity).getTime()) / (1000 * 60 * 60 * 24))
+        );
+        const userObj = user.toObject();
+        userObj.id = user._id.toString();
+
         inactiveMembersList.push({
-          ...user.toObject(),
-          lastActiveAt: latestActivity,
+          id: user._id.toString(),
+          user: userObj,
+          daysAbsent,
+          lastActiveDate: latestActivity,
+          ...userObj,
         });
       }
     }

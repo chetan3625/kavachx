@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:kavachx/Constants/user_role.dart';
 import 'package:kavachx/Controller/auth_controller.dart';
 
@@ -65,8 +66,8 @@ class AuthView extends StatelessWidget {
                       ),
                       child: Text(
                         'User is ${role.name}',
-                        style: const TextStyle(
-                          color: Color(0xFFFF3B30),
+                        style: GoogleFonts.inter(
+                          color: const Color(0xFFFF3B30),
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
                         ),
@@ -77,16 +78,19 @@ class AuthView extends StatelessWidget {
 
                     Text(
                       'Continue as $roleDisplayName',
-                      style: const TextStyle(
+                      style: GoogleFonts.outfit(
                         fontSize: 26,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
                       ),
                     ),
                     const SizedBox(height: 8),
-                    const Text(
+                    Text(
                       'Enter your details to access your account',
-                      style: TextStyle(color: Color(0xFFA1A1AA), fontSize: 14),
+                      style: GoogleFonts.inter(
+                        color: const Color(0xFFA1A1AA),
+                        fontSize: 14,
+                      ),
                     ),
 
                     const SizedBox(height: 24),

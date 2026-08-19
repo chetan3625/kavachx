@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:slide_to_act/slide_to_act.dart';
 import 'package:kavachx/Controller/member_dashboard_controller.dart';
 import 'package:kavachx/Model/exercise_model.dart';
@@ -63,20 +64,46 @@ class MemberDashboardView extends StatelessWidget {
 
             SafeArea(
               child: Obx(() {
+                Widget currentScreen;
                 switch (controller.selectedBottomIndex.value) {
                   case 0:
-                    return _buildHomeTab(context, controller);
+                    currentScreen = _buildHomeTab(context, controller);
+                    break;
                   case 1:
-                    return const MemberAttendanceHistoryView();
+                    currentScreen = const MemberAttendanceHistoryView();
+                    break;
                   case 2:
-                    return const MemberSubscriptionView();
+                    currentScreen = const MemberSubscriptionView();
+                    break;
                   case 3:
-                    return const MemberNotificationsView();
+                    currentScreen = const MemberNotificationsView();
+                    break;
                   case 4:
-                    return const MemberProfileView();
+                    currentScreen = const MemberProfileView();
+                    break;
                   default:
-                    return _buildHomeTab(context, controller);
+                    currentScreen = _buildHomeTab(context, controller);
                 }
+
+                return AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 320),
+                  switchInCurve: Curves.easeOutCubic,
+                  switchOutCurve: Curves.easeInCubic,
+                  transitionBuilder: (child, animation) {
+                    final slide = Tween<Offset>(
+                      begin: const Offset(0.04, 0),
+                      end: Offset.zero,
+                    ).animate(animation);
+                    return FadeTransition(
+                      opacity: animation,
+                      child: SlideTransition(position: slide, child: child),
+                    );
+                  },
+                  child: KeyedSubtree(
+                    key: ValueKey<int>(controller.selectedBottomIndex.value),
+                    child: currentScreen,
+                  ),
+                );
               }),
             ),
           ],
@@ -148,20 +175,20 @@ class MemberDashboardView extends StatelessWidget {
                       () => Text.rich(
                         TextSpan(
                           children: [
-                            const TextSpan(
+                            TextSpan(
                               text: 'Welcome ',
-                              style: TextStyle(
-                                fontSize: 22,
+                              style: GoogleFonts.outfit(
+                                fontSize: 24,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.white,
                               ),
                             ),
                             TextSpan(
                               text: controller.userFirstName.value,
-                              style: const TextStyle(
-                                fontSize: 22,
+                              style: GoogleFonts.outfit(
+                                fontSize: 24,
                                 fontWeight: FontWeight.bold,
-                                color: Color(0xFFFF3B30),
+                                color: const Color(0xFFFF3B30),
                               ),
                             ),
                             const TextSpan(
@@ -176,8 +203,8 @@ class MemberDashboardView extends StatelessWidget {
                     Obx(
                       () => Text(
                         'Target Today: ${controller.todayTargetPart.value}',
-                        style: const TextStyle(
-                          color: Color(0xFFFF3B30),
+                        style: GoogleFonts.poppins(
+                          color: const Color(0xFFFF3B30),
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
                         ),

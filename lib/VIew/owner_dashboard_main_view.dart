@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:kavachx/Controller/owner_dashboard_controller.dart';
 import 'package:kavachx/VIew/gym_qr_display_view.dart';
 import 'package:kavachx/VIew/join_request_view.dart';
@@ -64,22 +65,49 @@ class OwnerDashboardMainView extends StatelessWidget {
             Positioned.fill(
               child: SafeArea(
                 child: Obx(() {
+                  Widget currentScreen;
                   switch (controller.selectedBottomIndex.value) {
                     case 0:
-                      return _buildHomeTab(context, controller);
+                      currentScreen = _buildHomeTab(context, controller);
+                      break;
                     case 1:
-                      return const OwnerMembersView();
+                      currentScreen = const OwnerMembersView();
+                      break;
                     case 2:
-                      return const MembershipPlansView();
+                      currentScreen = const MembershipPlansView();
+                      break;
                     case 3:
-                      return const JoinRequestsView();
+                      currentScreen = const JoinRequestsView();
+                      break;
                     case 4:
-                      return const InactiveMembersView();
+                      currentScreen = const InactiveMembersView();
+                      break;
                     case 5:
-                      return const OwnerProfileView();
+                      currentScreen = const OwnerProfileView();
+                      break;
                     default:
-                      return _buildHomeTab(context, controller);
+                      currentScreen = _buildHomeTab(context, controller);
                   }
+
+                  return AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 320),
+                    switchInCurve: Curves.easeOutCubic,
+                    switchOutCurve: Curves.easeInCubic,
+                    transitionBuilder: (child, animation) {
+                      final slide = Tween<Offset>(
+                        begin: const Offset(0.04, 0),
+                        end: Offset.zero,
+                      ).animate(animation);
+                      return FadeTransition(
+                        opacity: animation,
+                        child: SlideTransition(position: slide, child: child),
+                      );
+                    },
+                    child: KeyedSubtree(
+                      key: ValueKey<int>(controller.selectedBottomIndex.value),
+                      child: currentScreen,
+                    ),
+                  );
                 }),
               ),
             ),
@@ -666,12 +694,12 @@ class _StatTile extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Icon(icon, color: iconColor, size: 22),
+              Icon(icon, color: iconColor, size: 24),
               Text(
                 value,
-                style: TextStyle(
+                style: GoogleFonts.outfit(
                   color: iconColor,
-                  fontSize: 22,
+                  fontSize: 26,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -680,7 +708,11 @@ class _StatTile extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             title,
-            style: const TextStyle(color: Color(0xFFA1A1AA), fontSize: 12),
+            style: GoogleFonts.poppins(
+              color: const Color(0xFFA1A1AA),
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ],
       ),

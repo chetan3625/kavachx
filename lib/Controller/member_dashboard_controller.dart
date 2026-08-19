@@ -27,16 +27,16 @@ class MemberDashboardController extends GetxController {
   ].obs;
 
   // Hydration Tracker
-  final RxDouble currentWaterLitres = 2.5.obs;
-  final RxDouble targetWaterLitres = 4.0.obs;
-  final RxInt waterGlasses = 10.obs;
+  final RxDouble currentWaterLitres = 0.0.obs;
+  final RxDouble targetWaterLitres = 3.5.obs;
+  final RxInt waterGlasses = 0.obs;
 
   // Body Metrics
-  final RxDouble currentWeightKg = 74.5.obs;
-  final RxDouble targetWeightKg = 70.0.obs;
+  final RxDouble currentWeightKg = 0.0.obs;
+  final RxDouble targetWeightKg = 0.0.obs;
 
   // Exercise & Target Stats
-  final RxString todayTargetPart = 'Chest & Triceps'.obs;
+  final RxString todayTargetPart = ''.obs;
   final RxList<ExerciseModel> todayExercises = <ExerciseModel>[].obs;
   final RxString userFirstName = 'Member'.obs;
   final RxBool isAssociatedWithGym = false.obs;
@@ -75,6 +75,7 @@ class MemberDashboardController extends GetxController {
     try {
       if (Get.isRegistered<SocketService>()) {
         final socketService = Get.find<SocketService>();
+        socketService.socket.off('join_request_updated');
         socketService.socket.on('join_request_updated', (data) async {
           if (data != null && data is Map) {
             final String status = data['status'] ?? '';
@@ -116,8 +117,17 @@ class MemberDashboardController extends GetxController {
     }
   }
 
-  Future<void> fetchDashboardData() async {
-    isLoading.value = true;
+  bool _isFetching = false;
+  bool _isDataLoaded = false;
+  bool get isDataLoaded => _isDataLoaded;
+
+  Future<void> fetchDashboardData({bool forceRefresh = false}) async {
+    if (_isFetching) return;
+    if (_isDataLoaded && !forceRefresh) return;
+    _isFetching = true;
+    if (!_isDataLoaded) {
+      isLoading.value = true;
+    }
     try {
       final response = await _apiService.getMemberDashboardSummary();
       if (response.isOk && response.body != null) {
@@ -125,11 +135,16 @@ class MemberDashboardController extends GetxController {
 
         isCheckedIn.value = data['isCheckedIn'] ?? false;
         currentStreakDays.value = data['streakDays'] ?? 0;
-        todayTargetPart.value = data['todayTargetPart'] ?? 'Full Body';
+        todayTargetPart.value = data['todayTargetPart'] ?? '';
         currentWaterLitres.value =
-            (data['waterLitres'] as num?)?.toDouble() ?? 2.5;
+            (data['waterLitres'] as num?)?.toDouble() ?? 0.0;
+        targetWaterLitres.value =
+            (data['targetWaterLitres'] as num?)?.toDouble() ?? 3.5;
+        waterGlasses.value = (currentWaterLitres.value / 0.25).round();
         currentWeightKg.value =
-            (data['currentWeightKg'] as num?)?.toDouble() ?? 70.0;
+            (data['currentWeightKg'] as num?)?.toDouble() ?? 0.0;
+        targetWeightKg.value =
+            (data['targetWeightKg'] as num?)?.toDouble() ?? 0.0;
 
         if (data['weeklyActivity'] != null) {
           weeklyActivity.value = List<bool>.from(data['weeklyActivity']);
@@ -151,11 +166,13 @@ class MemberDashboardController extends GetxController {
       } else {
         todayExercises.value = [];
       }
+      _isDataLoaded = true;
     } catch (e) {
       debugPrint('Error fetching dashboard summary: $e');
       todayExercises.value = [];
     } finally {
       isLoading.value = false;
+      _isFetching = false;
     }
   }
 
@@ -239,23 +256,15 @@ class MemberDashboardController extends GetxController {
         todayExercises.refresh();
         _showSnackbar('Exercise Added', '$name added to your routine!');
       } else {
-        final localEx = ExerciseModel(
-          id: 'ex_${DateTime.now().millisecondsSinceEpoch}',
-          name: name,
-          muscleGroup: muscleGroup,
-          weightInKg: weightInKg,
-          repsPerSet: repsPerSet,
-          totalSets: totalSets,
-          completedSets: 0,
-          durationMinutes: durationMinutes,
-          notes: notes,
+        _showSnackbar(
+          'Error',
+          res.body?['message'] ?? 'Failed to save exercise to backend',
+          isError: true,
         );
-        todayExercises.add(localEx);
-        todayExercises.refresh();
-        _showSnackbar('Exercise Added', '$name added to your routine!');
       }
     } catch (e) {
       debugPrint('Error adding exercise: $e');
+      _showSnackbar('Error', 'Connection error: $e', isError: true);
     }
   }
 

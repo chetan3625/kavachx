@@ -1,3 +1,4 @@
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:kavachx/Controller/member_attendance_controller.dart';
@@ -12,11 +13,33 @@ import 'package:kavachx/Services/firebase_messaging_service.dart';
 
 class SplashController extends GetxController {
   final ApiService _apiService = Get.find<ApiService>();
+  AudioPlayer? _audioPlayer;
 
   @override
   void onInit() {
     super.onInit();
+    _playSplashSound();
     _checkAuthAndNavigate();
+  }
+
+  /// Attempts to play background music/sound track on splash screen
+  Future<void> _playSplashSound() async {
+    try {
+      _audioPlayer = AudioPlayer();
+      // Plays splash_sound.mp3 from asset/sounds/
+      await _audioPlayer?.play(AssetSource('sounds/splash_sound.mp3'));
+    } catch (e) {
+      debugPrint('[SplashSound] Soundtrack audio note: $e');
+    }
+  }
+
+  @override
+  void onClose() {
+    try {
+      _audioPlayer?.stop();
+      _audioPlayer?.dispose();
+    } catch (_) {}
+    super.onClose();
   }
 
   void _checkAuthAndNavigate() async {
@@ -85,10 +108,22 @@ class SplashController extends GetxController {
   Future<void> _preloadRoleData(String role) async {
     try {
       if (role == 'gym_owner') {
-        final ownerDashboard = Get.put(OwnerDashboardController());
-        final ownerMembers = Get.put(OwnerMembersController());
-        final planController = Get.put(MembershipPlanController());
-        final ownerProfile = Get.put(OwnerProfileController());
+        final ownerDashboard = Get.put(
+          OwnerDashboardController(),
+          permanent: true,
+        );
+        final ownerMembers = Get.put(
+          OwnerMembersController(),
+          permanent: true,
+        );
+        final planController = Get.put(
+          MembershipPlanController(),
+          permanent: true,
+        );
+        final ownerProfile = Get.put(
+          OwnerProfileController(),
+          permanent: true,
+        );
 
         await Future.wait([
           ownerDashboard.fetchDashboardStats(),
@@ -97,9 +132,18 @@ class SplashController extends GetxController {
           ownerProfile.fetchGymProfile(),
         ]);
       } else if (role == 'gym_member') {
-        final memberDashboard = Get.put(MemberDashboardController());
-        final memberAttendance = Get.put(MemberAttendanceController());
-        final memberSubscription = Get.put(MemberSubscriptionController());
+        final memberDashboard = Get.put(
+          MemberDashboardController(),
+          permanent: true,
+        );
+        final memberAttendance = Get.put(
+          MemberAttendanceController(),
+          permanent: true,
+        );
+        final memberSubscription = Get.put(
+          MemberSubscriptionController(),
+          permanent: true,
+        );
 
         await Future.wait([
           memberDashboard.fetchDashboardData(),
