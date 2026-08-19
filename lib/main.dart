@@ -106,7 +106,7 @@ class KavachXApp extends StatelessWidget {
         // Owner Onboarding — slide up (sheet-like onboarding feel)
         GetPage(
           name: '/owner-onboarding',
-          page: () => const OwnerOnboardingView(),
+          page: () => const OwnerMembersView(),
           transition: AppTransitions.slideUpTransition,
           transitionDuration: AppTransitions.onboardingDuration,
           curve: Curves.easeOutCubic,

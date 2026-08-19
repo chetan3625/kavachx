@@ -83,7 +83,8 @@ export const getInactiveMembers = async (req, res, next) => {
         .status(404)
         .json({ success: false, message: "Active gym not found." });
 
-    const cutoffDate = new Date();
+    const now = new Date();
+    const cutoffDate = new Date(now);
     cutoffDate.setDate(cutoffDate.getDate() - days);
 
     // 1. Get all members belonging to this gym (via User and Membership)
