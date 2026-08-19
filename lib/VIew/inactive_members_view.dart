@@ -17,6 +17,9 @@ class InactiveMembersView extends StatelessWidget {
         onPressed: () => _showBroadcastOptionsBottomSheet(context, controller),
         backgroundColor: const Color(0xFFFF3B30),
         elevation: 8,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
         icon: const Icon(Icons.campaign_rounded, color: Colors.white, size: 24),
         label: Text(
           'Broadcast Reminders',
@@ -175,33 +178,50 @@ class InactiveMembersView extends StatelessWidget {
 
                           // Direct Trigger Action Buttons
                           Row(
+                            mainAxisSize: MainAxisSize.min,
                             children: [
                               // Call Button
                               IconButton(
+                                constraints: const BoxConstraints(
+                                  minWidth: 36,
+                                  minHeight: 36,
+                                ),
+                                padding: EdgeInsets.zero,
                                 onPressed: () =>
                                     controller.makePhoneCall(item.user.phone),
-                                icon: const Icon(Icons.phone_rounded),
+                                icon: const Icon(Icons.phone_rounded, size: 20),
                                 color: const Color(0xFF34C759),
                                 tooltip: 'Call Member',
                               ),
                               // SMS Button
                               IconButton(
+                                constraints: const BoxConstraints(
+                                  minWidth: 36,
+                                  minHeight: 36,
+                                ),
+                                padding: EdgeInsets.zero,
                                 onPressed: () =>
                                     controller.sendSMS(item.user.phone),
-                                icon: const Icon(Icons.sms_rounded),
+                                icon: const Icon(Icons.sms_rounded, size: 20),
                                 color: const Color(0xFFFF9500),
                                 tooltip: 'Send SMS',
                               ),
                               // WhatsApp Trigger Button
                               IconButton(
+                                constraints: const BoxConstraints(
+                                  minWidth: 36,
+                                  minHeight: 36,
+                                ),
+                                padding: EdgeInsets.zero,
                                 onPressed: () => controller.triggerWhatsApp(
                                   item.user.phone,
                                   item.user.name,
                                 ),
-                                icon: const Icon(Icons.chat_bubble_rounded),
-                                color: const Color(
-                                  0xFF25D366,
-                                ), // WhatsApp Green
+                                icon: const Icon(
+                                  Icons.chat_bubble_rounded,
+                                  size: 20,
+                                ),
+                                color: const Color(0xFF25D366),
                                 tooltip: 'WhatsApp Reminder',
                               ),
                             ],
