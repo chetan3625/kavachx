@@ -372,3 +372,121 @@ export const getMemberAttendanceHistoryForOwner = async (req, res, next) => {
     next(error);
   }
 };
+
+export const broadcastInactiveMembers = async (req, res, next) => {
+  try {
+    const ownerId = req.user.userId;
+    const { channel, days = 3, memberIds } = req.body || {};
+
+    const gym = await Gym.findOne({ ownerId, isActive: true });
+    if (!gym) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Active gym not found." });
+    }
+
+    const {
+      sendWhatsAppBroadcast,
+      sendSMSBroadcast,
+      sendAICallBroadcast,
+    } = await import("../../services/broadcast.service.js");
+
+    const now = new Date();
+    const filterDays = parseInt(days, 10) || 3;
+    const cutoffDate = new Date(now);
+    cutoffDate.setDate(cutoffDate.getDate() - filterDays);
+
+    const directUsers = await User.find({
+      gymId: gym._id,
+      role: "gym_member",
+    }).select("_id name phone email lastActiveAt createdAt");
+
+    const { default: Attendance } = await import("../../models/Attendance.js");
+
+    const targetMembers = [];
+
+    for (const user of directUsers) {
+      if (Array.isArray(memberIds) && memberIds.length > 0) {
+        if (!memberIds.includes(user._id.toString())) continue;
+      }
+
+      const latestAttendance = await Attendance.findOne({
+        memberId: user._id,
+      }).sort({ createdAt: -1 });
+
+      let latestActivity = user.lastActiveAt || user.createdAt;
+      if (latestAttendance && latestAttendance.checkInTime) {
+        const attDate = new Date(latestAttendance.checkInTime);
+        if (attDate > new Date(latestActivity)) {
+          latestActivity = attDate;
+        }
+      }
+
+      if (
+        new Date(latestActivity) < cutoffDate ||
+        (Array.isArray(memberIds) && memberIds.includes(user._id.toString()))
+      ) {
+        const daysAbsent = Math.max(
+          1,
+          Math.floor(
+            (now.getTime() - new Date(latestActivity).getTime()) /
+              (1000 * 60 * 60 * 24),
+          ),
+        );
+        targetMembers.push({
+          id: user._id.toString(),
+          _id: user._id.toString(),
+          name: user.name,
+          phone: user.phone,
+          daysAbsent,
+        });
+      }
+    }
+
+    if (targetMembers.length === 0) {
+      return res.status(200).json({
+        success: true,
+        message: "No absent members match the selected filter.",
+        count: 0,
+        data: [],
+      });
+    }
+
+    let broadcastResult;
+    const gymName = gym.name || "KavachX Gym";
+
+    if (channel === "whatsapp") {
+      broadcastResult = await sendWhatsAppBroadcast({
+        members: targetMembers,
+        gymName,
+        days: filterDays,
+      });
+    } else if (channel === "sms") {
+      broadcastResult = await sendSMSBroadcast({
+        members: targetMembers,
+        gymName,
+        days: filterDays,
+      });
+    } else if (channel === "aicall") {
+      broadcastResult = await sendAICallBroadcast({
+        members: targetMembers,
+        gymName,
+        days: filterDays,
+      });
+    } else {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid broadcast channel specified." });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: `Broadcast dispatched successfully via ${channel.toUpperCase()} to ${targetMembers.length} member(s)! 🎉`,
+      count: targetMembers.length,
+      channel,
+      data: broadcastResult,
+    });
+  } catch (error) {
+    next(error);
+  }
+};

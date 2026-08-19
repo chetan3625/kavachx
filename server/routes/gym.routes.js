@@ -63,6 +63,12 @@ router.get(
   authorize("gym_owner"),
   getInactiveMembers,
 );
+router.post(
+  "/inactive-members/broadcast",
+  protect,
+  authorize("gym_owner"),
+  broadcastInactiveMembers,
+);
 router.get(
   "/today-checkins",
   protect,

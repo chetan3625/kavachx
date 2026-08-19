@@ -45,9 +45,66 @@ class InactiveMembersController extends GetxController {
   final RxList<MemberActivityModel> filteredMembers =
       <MemberActivityModel>[].obs;
   final RxBool isLoading = false.obs;
+  final RxBool isBroadcasting = false.obs;
 
   // Selected filter in days (e.g., 3, 7, 15, 30)
   final RxInt selectedDaysFilter = 3.obs;
+
+  Future<void> broadcastToInactiveMembers({required String channel}) async {
+    if (filteredMembers.isEmpty) {
+      _showSnackbar(
+        'No Target Members',
+        'There are no inactive members absent for ${selectedDaysFilter.value}+ days to notify.',
+        isError: true,
+      );
+      return;
+    }
+
+    isBroadcasting.value = true;
+    try {
+      final List<String> ids = filteredMembers
+          .map((m) => m.user.id ?? '')
+          .where((id) => id.isNotEmpty)
+          .toList();
+
+      final response = await _apiService.broadcastInactiveMembers(
+        channel: channel,
+        days: selectedDaysFilter.value,
+        memberIds: ids.isNotEmpty ? ids : null,
+      );
+
+      if (response.isOk &&
+          response.body is Map &&
+          response.body['success'] == true) {
+        final count = response.body['count'] ?? filteredMembers.length;
+        final channelTitle = channel == 'whatsapp'
+            ? 'WhatsApp'
+            : channel == 'sms'
+                ? 'SMS'
+                : 'AI Voice Call';
+
+        // Close bottom sheet if open
+        if (Get.isBottomSheetOpen ?? false) {
+          Get.back();
+        }
+
+        _showSnackbar(
+          'Broadcast Sent! 🚀',
+          '$channelTitle reminder dispatched to $count absent member(s).',
+          isError: false,
+        );
+      } else {
+        final msg = response.body is Map && response.body['message'] != null
+            ? response.body['message']
+            : 'Broadcast failed';
+        _showSnackbar('Broadcast Error', msg, isError: true);
+      }
+    } catch (e) {
+      _showSnackbar('Error', 'Broadcast request failed: $e', isError: true);
+    } finally {
+      isBroadcasting.value = false;
+    }
+  }
 
   @override
   void onInit() {

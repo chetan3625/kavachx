@@ -40,5 +40,19 @@ export const env = {
     process.env.JWT_REFRESH_EXPIRES_IN ||
     "30d",
 
-  CLIENT_URL: process.env.CLIENT_URL || "http://localhost:5173"
+  CLIENT_URL: process.env.CLIENT_URL || "http://localhost:5173",
+
+  // WhatsApp Business API Credentials
+  WHATSAPP_API_KEY: process.env.WHATSAPP_API_KEY || "",
+  WHATSAPP_PHONE_NUMBER_ID: process.env.WHATSAPP_PHONE_NUMBER_ID || "",
+  WHATSAPP_TEMPLATE_NAME: process.env.WHATSAPP_TEMPLATE_NAME || "gym_member_reactivation_v1",
+
+  // Twilio SMS API Credentials
+  TWILIO_ACCOUNT_SID: process.env.TWILIO_ACCOUNT_SID || "",
+  TWILIO_AUTH_TOKEN: process.env.TWILIO_AUTH_TOKEN || "",
+  TWILIO_PHONE_NUMBER: process.env.TWILIO_PHONE_NUMBER || "",
+
+  // AI Voice Call API Credentials
+  AI_CALL_API_KEY: process.env.AI_CALL_API_KEY || "",
+  AI_CALL_AGENT_ID: process.env.AI_CALL_AGENT_ID || ""
 };

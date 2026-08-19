@@ -490,4 +490,18 @@ class ApiService extends GetConnect {
   Future<Response> updateFcmToken(String token) {
     return put('/members/fcm-token', {'fcmToken': token});
   }
+
+  // ================= INACTIVE MEMBERS BROADCAST ENDPOINT =================
+
+  Future<Response> broadcastInactiveMembers({
+    required String channel,
+    required int days,
+    List<String>? memberIds,
+  }) {
+    return post('/gyms/inactive-members/broadcast', {
+      'channel': channel,
+      'days': days,
+      if (memberIds != null) 'memberIds': memberIds,
+    });
+  }
 }
